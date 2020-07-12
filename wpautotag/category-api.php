@@ -3,6 +3,10 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
   $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/category-model';
   // cast to int
   $category_prior = array_map('intval', $category_prior);
+  if (!$category_prior) {
+    // if empty, cast to stdClass so empty dict will be passed to API
+    $category_prior = new stdClass();
+  }
   $data = array(
     'data' => [
       array(

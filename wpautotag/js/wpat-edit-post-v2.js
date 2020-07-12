@@ -14,24 +14,20 @@ const withDispatch = wp.data.withDispatch;
 const initial_state = {
     'suggestedCategory': ajax_object.suggested_category
 };
-const reducer = {
-  reducer( state = initial_state, action ) {
-    if ( action.type === 'SET_SUGGESTED_CATEGORY' ) {
-      return {
-        ...state,
-        suggestedCategory: action.suggestedCategory
-      }
-    }
-    return state;
+function reducer( state = initial_state, action ) {
+  if ( action.type === 'SET_SUGGESTED_CATEGORY' ) {
+    return {
+      ...state,
+      suggestedCategory: action.suggestedCategory
+    };
   };
+  return state;
 };
 // Selectors
 const selectors = {
   getSuggestedCategory( state ) {
-    return {
-      state.suggestedCategory
-    };
-  };
+    return state.suggestedCategory;
+  }
 };
 // Actions
 const actions = {
@@ -40,7 +36,7 @@ const actions = {
       type: 'SET_SUGGESTED_CATEGORY',
       suggestedCategory: suggestedCategory
     };
-  };
+  }
 };
 // Register
 const wpatCategoryNamespace = 'wpautotag-plugin/suggested-category'
@@ -56,12 +52,42 @@ class SuggestedCategoryComponent extends Component {
   constructor() {
     super( ...arguments );
     this.state = initial_state
+    console.log(this.state);
     wp.data.subscribe(() => {
-      if (isSavingPost || isAutosavingPost) {
-        let newSuggestedCategory = predictCategory(
-          this.props.postContent, this.props.actualCategories
-        )
-        this.props.setSuggestedCategory(newSuggestedCategory);
+      console.log('subscription trigger');
+      // refresh suggested category if saving and edited post content
+      // different from saved post content
+      if (
+        (this.props.isSavingPost || this.props.isAutosavingPost) &&
+        (this.props.postContent != this.props.savedPostContent)
+      ) {
+        console.log('saving condition met');
+        // console.log(this.props);
+        // this.predictCategory(
+        //   this.props.postContent, this.props.actualCategories
+        // )
+        var data = {
+          'action': 'wpat_refresh_suggested_category',
+          'post_content': this.props.postContent,
+          'category_prior': ajax_object.category_prior,
+          'actual_categories': this.props.actualCategories
+        };
+        console.log(data);
+        jQuery.post(ajax_object.ajax_url, data, function(response) {
+          console.log(response);
+          console.log(this);
+          if (this.props.getSuggestedCategory() !== response) {
+            // prevent infinite loop while saving
+            this.props.setSuggestedCategory(response);
+          }
+        });
+
+        // console.log('newSuggestedCategory:');
+        // console.log(newSuggestedCategory);
+        // if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
+        //   // prevent infinite loop while saving
+        //   this.props.setSuggestedCategory(newSuggestedCategory);
+        // }
       };
     } );
   };
@@ -75,10 +101,13 @@ class SuggestedCategoryComponent extends Component {
     };
     console.log(data);
     jQuery.post(ajax_object.ajax_url, data, function(response) {
-      return response;
+      console.log(response);
+      if (this.props.getSuggestedCategory() !== response) {
+        // prevent infinite loop while saving
+        this.props.setSuggestedCategory(response);
+      }
     });
-    return '';
-  }
+  };
   // render
   render() {
     return el(
@@ -92,8 +121,8 @@ class SuggestedCategoryComponent extends Component {
                 name: 'wpat_suggested_category',
                 label: __( 'Suggested Category', 'wpat' ),
                 help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
-                spellcheck: true,
-                maxlength: 100,
+                spellCheck: true,
+                maxLength: 100,
                 value: this.state.suggestedCategory,
                 onChange: ( value ) => {
                     // update text
@@ -107,7 +136,8 @@ class SuggestedCategoryComponent extends Component {
             }
         )
     );
-}
+  };
+};
 
 // Higher-order component to detect changes in post content, actual categories,
 // and saving status
@@ -121,15 +151,19 @@ const SuggestedCategoryComponentHOC = compose( [
             getSuggestedCategory
         } = select( wpatCategoryNamespace );
         const postContent = select( "core/editor" ).getCurrentPost().content;
+        const savedPostContent = select( "core/editor" ).getEditedPostContent();
         // format array of actualCategories
         const catObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'category' );
         var actualCategories = [];
-        catObjs.forEach((catObj, i) => { actualCategories.push(catObj['name']) });
+        if (catObjs) {
+          catObjs.forEach((catObj, i) => { actualCategories.push(catObj['name']) });
+        };
 
         return {
-            isSaving: isSavingPost(),
-            isAutosaving: isAutosavingPost(),
+            isSavingPost: isSavingPost(),
+            isAutosavingPost: isAutosavingPost(),
             postContent: postContent,
+            savedPostContent: savedPostContent,
             actualCategories: actualCategories,
             getSuggestedCategory: getSuggestedCategory,
         };
@@ -138,7 +172,7 @@ const SuggestedCategoryComponentHOC = compose( [
         const {
             setSuggestedCategory
         } = dispatch( wpatCategoryNamespace );
-
+        console.log('dispatching');
         return {
             setSuggestedCategory: setSuggestedCategory,
         };
