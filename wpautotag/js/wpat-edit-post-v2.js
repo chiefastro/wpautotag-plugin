@@ -1,4 +1,5 @@
 const el = wp.element.createElement;
+const { Fragment } = wp.element;
 const __ = wp.i18n.__;
 const Component = wp.element.Component;
 const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
@@ -62,12 +63,9 @@ class SuggestedCategoryComponent extends Component {
       console.log('subscription trigger');
       // refresh suggested category if saving and edited post content
       // different from saved post content
-      console.log((this.props.isSavingPost || this.props.isAutosavingPost));
-      console.log((this.props.postContent != this.props.savedPostContent));
       const catsEqual = arrEqual(
         this.props.actualCategories, this.props.savedActualCategories
       )
-      console.log(!catsEqual);
       if (
           (this.props.isSavingPost || this.props.isAutosavingPost) &&
           (
@@ -92,12 +90,12 @@ class SuggestedCategoryComponent extends Component {
           ( data ) => {
             console.log('response');
             console.log(data);
-            const newSuggestedCategory = data;
+            const newSuggestedCategory = 'testing render'; //data;
             if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
               // prevent infinite loop while saving
               // update rendered value
               this.setState( {
-                  suggestedCategory: data
+                  suggestedCategory: newSuggestedCategory
               });
               // set in datastore
               this.props.setSuggestedCategory(newSuggestedCategory);
@@ -114,31 +112,18 @@ class SuggestedCategoryComponent extends Component {
   };
   // render
   render() {
+    console.log('render suggested category component');
+    console.log(this.state.suggestedCategory);
     return el(
-        PluginPostStatusInfo,
-        {
-            className: 'wpat-suggested-category-panel'
-        },
-        el(
-            TextControl,
-            {
-                name: 'wpat_suggested_category',
-                label: __( 'Suggested Category', 'wpat' ),
-                help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
-                spellCheck: true,
-                maxLength: 100,
-                value: this.state.suggestedCategory,
-                onChange: ( value ) => {
-                    // // update rendered value
-                    // this.setState( {
-                    //     suggestedCategory: value
-                    // });
-                    //
-                    // // set in datastore
-                    // this.props.setSuggestedCategory( value );
-                }
-            }
-        )
+      TextControl,
+      {
+          name: 'wpat_suggested_category',
+          label: __( 'Suggested Category', 'wpat' ),
+          help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
+          spellCheck: true,
+          maxLength: 100,
+          value: this.state.suggestedCategory,
+      }
     );
   };
 };
@@ -211,3 +196,73 @@ const SuggestedCategoryComponentHOC = compose( [
 registerPlugin( 'wpat-category-plugin', {
 	render: SuggestedCategoryComponentHOC
 } );
+
+/**
+ * Render suggested category within HierarchicalTermSelector
+ */
+function renderSuggestedCategoryComponent( OriginalComponent ) {
+	return function( props ) {
+    console.log('filter entered');
+    console.log(props);
+    // return el(
+		// 	'div',
+		// 	{},
+		// 	'Element inserted'
+		// );
+		if ( props.slug === 'category' ) {
+      console.log('category entered');
+      return el(
+        'div',
+        {},
+        [
+          el(
+            OriginalComponent,
+            props
+          ),
+          el(
+            SuggestedCategoryComponentHOC,
+            {key: 'wpat_suggested_category_container'}
+          )
+        ]
+      );
+			// 	OriginalComponent,
+			// 	props,
+      //   el(
+      //     TextControl,
+      //     {
+      //         name: 'wpat_suggested_category',
+      //         label: __( 'Suggested Category', 'wpat' ),
+      //         help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
+      //         spellCheck: true,
+      //         maxLength: 100,
+      //         value: 'test value',
+      //     }
+      //   )
+			// );
+		} else {
+      console.log('tags entered');
+      return el(
+  			'div',
+  			{class_name: 'wpat_test_class'},
+        el(
+  				OriginalComponent,
+  				props
+        )
+  		);
+      // return el(
+			// 	OriginalComponent,
+			// 	props,
+      //   el(
+    	// 		'div',
+    	// 		{},
+    	// 		'Element inserted'
+    	// 	)
+			// );
+		}
+	}
+};
+wp.hooks.addFilter(
+	'editor.PostTaxonomyType',
+	'wpat-category-plugin',
+	renderSuggestedCategoryComponent
+);
