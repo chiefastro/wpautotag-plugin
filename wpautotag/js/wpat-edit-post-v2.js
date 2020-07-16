@@ -46,6 +46,11 @@ registerStore( wpatCategoryNamespace, {
   selectors
 } );
 
+// Functions
+function arrEqual(a, b) {
+  return a.length === b.length && a.every(value => b.includes(value));
+}
+
 // Component
 class SuggestedCategoryComponent extends Component {
   // init and define subscriptions
@@ -57,56 +62,55 @@ class SuggestedCategoryComponent extends Component {
       console.log('subscription trigger');
       // refresh suggested category if saving and edited post content
       // different from saved post content
+      console.log((this.props.isSavingPost || this.props.isAutosavingPost));
+      console.log((this.props.postContent != this.props.savedPostContent));
+      const catsEqual = arrEqual(
+        this.props.actualCategories, this.props.savedActualCategories
+      )
+      console.log(!catsEqual);
       if (
-        (this.props.isSavingPost || this.props.isAutosavingPost) &&
-        (this.props.postContent != this.props.savedPostContent)
+          (this.props.isSavingPost || this.props.isAutosavingPost) &&
+          (
+            (this.props.postContent != this.props.savedPostContent) ||
+            (!catsEqual)
+          )
       ) {
+        // Get new suggested categories from API
         console.log('saving condition met');
-        // console.log(this.props);
-        // this.predictCategory(
-        //   this.props.postContent, this.props.actualCategories
-        // )
-        var data = {
-          'action': 'wpat_refresh_suggested_category',
+        console.log(this.props);
+        var payload = {
           'post_content': this.props.postContent,
           'category_prior': ajax_object.category_prior,
           'actual_categories': this.props.actualCategories
         };
-        console.log(data);
-        jQuery.post(ajax_object.ajax_url, data, function(response) {
-          console.log(response);
-          console.log(this);
-          if (this.props.getSuggestedCategory() !== response) {
-            // prevent infinite loop while saving
-            this.props.setSuggestedCategory(response);
+        console.log(payload);
+        wp.apiRequest( {
+          path: 'wpautotag/v1/category',
+          method: 'POST',
+          data: payload
+        } ).then(
+          ( data ) => {
+            console.log('response');
+            console.log(data);
+            const newSuggestedCategory = data;
+            if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
+              // prevent infinite loop while saving
+              // update rendered value
+              this.setState( {
+                  suggestedCategory: data
+              });
+              // set in datastore
+              this.props.setSuggestedCategory(newSuggestedCategory);
+            }
+          },
+          ( err ) => {
+            console.log('error');
+            console.log(err);
+            return err;
           }
-        });
-
-        // console.log('newSuggestedCategory:');
-        // console.log(newSuggestedCategory);
-        // if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
-        //   // prevent infinite loop while saving
-        //   this.props.setSuggestedCategory(newSuggestedCategory);
-        // }
+        );
       };
     } );
-  };
-  // Get new suggested categories from API
-  predictCategory(postContent, actualCategories) {
-    var data = {
-      'action': 'wpat_refresh_suggested_category',
-      'post_content': postContent,
-      'category_prior': ajax_object.category_prior,
-      'actual_categories': actualCategories
-    };
-    console.log(data);
-    jQuery.post(ajax_object.ajax_url, data, function(response) {
-      console.log(response);
-      if (this.props.getSuggestedCategory() !== response) {
-        // prevent infinite loop while saving
-        this.props.setSuggestedCategory(response);
-      }
-    });
   };
   // render
   render() {
@@ -125,13 +129,13 @@ class SuggestedCategoryComponent extends Component {
                 maxLength: 100,
                 value: this.state.suggestedCategory,
                 onChange: ( value ) => {
-                    // update text
-                    this.setState( {
-                        suggestedCategory: value
-                    });
-
-                    // set message in datastore
-                    this.props.setSuggestedCategory( value );
+                    // // update rendered value
+                    // this.setState( {
+                    //     suggestedCategory: value
+                    // });
+                    //
+                    // // set in datastore
+                    // this.props.setSuggestedCategory( value );
                 }
             }
         )
@@ -146,25 +150,47 @@ const SuggestedCategoryComponentHOC = compose( [
         const {
             isSavingPost,
             isAutosavingPost,
+            hasChangedContent
         } = select( 'core/editor' );
         const {
             getSuggestedCategory
         } = select( wpatCategoryNamespace );
-        const postContent = select( "core/editor" ).getCurrentPost().content;
-        const savedPostContent = select( "core/editor" ).getEditedPostContent();
+        const savedPostContent = select( "core/editor" ).getCurrentPost().content;
+        const postContent = select( "core/editor" ).getEditedPostContent();
         // format array of actualCategories
+        const savedCatIds = select( 'core/editor' ).getCurrentPostAttribute( 'categories' );
+        const catIds = select( 'core/editor' ).getEditedPostAttribute( 'categories' );
         const catObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'category' );
-        var actualCategories = [];
+        var catIdNameMap = {};
         if (catObjs) {
-          catObjs.forEach((catObj, i) => { actualCategories.push(catObj['name']) });
+          catObjs.forEach((catObj, i) => {
+            if (catObj.taxonomy === 'category') {
+              catIdNameMap[catObj.id] = catObj.name;
+            }
+          });
+        };
+        var actualCategories = [];
+        if (catIds) {
+          catIds.forEach((catId, i) => {
+            actualCategories.push(catIdNameMap[catId]);
+          });
+        };
+        var savedActualCategories = [];
+        if (savedCatIds) {
+          savedCatIds.forEach((catId, i) => {
+            savedActualCategories.push(catIdNameMap[catId]);
+          });
         };
 
         return {
             isSavingPost: isSavingPost(),
             isAutosavingPost: isAutosavingPost(),
+            // triggers subscription 3 times if used instead of checking content
+            // hasChangedContent: hasChangedContent(),
             postContent: postContent,
             savedPostContent: savedPostContent,
             actualCategories: actualCategories,
+            savedActualCategories: savedActualCategories,
             getSuggestedCategory: getSuggestedCategory,
         };
     } ),
