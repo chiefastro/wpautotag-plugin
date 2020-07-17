@@ -1,14 +1,22 @@
+// import { Fragment } from '@wordpress/element';
+// import { withSelect } from '@wordpress/data';
+// import { compose } from '@wordpress/compose';
+//
 const el = wp.element.createElement;
 const { Fragment } = wp.element;
 const __ = wp.i18n.__;
 const Component = wp.element.Component;
 const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
 const TextControl = wp.components.TextControl;
+const CheckboxControl = wp.components.CheckboxControl;
+const HierarchicalTermSelector = wp.editor.HierarchicalTermSelector;
 const registerPlugin = wp.plugins.registerPlugin;
 const registerStore = wp.data.registerStore;
 const compose = wp.compose.compose;
 const withSelect = wp.data.withSelect;
 const withDispatch = wp.data.withDispatch;
+
+
 
 // Register store for suggested category
 // Reducer
@@ -57,7 +65,9 @@ class SuggestedCategoryComponent extends Component {
   // init and define subscriptions
   constructor() {
     super( ...arguments );
-    this.state = initial_state
+    this.state = {
+        suggestedCategory: this.props.getSuggestedCategory()
+    }; //initial_state;
     console.log(this.state);
     wp.data.subscribe(() => {
       console.log('subscription trigger');
@@ -112,8 +122,29 @@ class SuggestedCategoryComponent extends Component {
   };
   // render
   render() {
-    console.log('render suggested category component');
-    console.log(this.state.suggestedCategory);
+    // return el(
+    //   'div',
+    //   {key: 'wpat_category_container'},
+    //   [
+    //     el(
+    //       HierarchicalTermSelector,
+    //       {
+    //         key: 'wpat_standard_category_container'
+    //       }
+    //     ),
+    //     el(
+    //       TextControl,
+    //       {
+    //           key: 'wpat_suggested_category',
+    //           label: __( 'Suggested Category', 'wpat' ),
+    //           help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
+    //           spellCheck: true,
+    //           maxLength: 100,
+    //           value: this.state.suggestedCategory,
+    //       }
+    //     )
+    //   ]
+    // );
     return el(
       TextControl,
       {
@@ -213,32 +244,21 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
       console.log('category entered');
       return el(
         'div',
-        {},
+        {key: 'wpat_category_container'},
         [
-          el(
-            OriginalComponent,
-            props
-          ),
           el(
             SuggestedCategoryComponentHOC,
             {key: 'wpat_suggested_category_container'}
+          ),
+          el(
+            OriginalComponent,
+            {
+              ...props,
+              key: 'wpat_standard_category_container'
+            }
           )
         ]
       );
-			// 	OriginalComponent,
-			// 	props,
-      //   el(
-      //     TextControl,
-      //     {
-      //         name: 'wpat_suggested_category',
-      //         label: __( 'Suggested Category', 'wpat' ),
-      //         help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
-      //         spellCheck: true,
-      //         maxLength: 100,
-      //         value: 'test value',
-      //     }
-      //   )
-			// );
 		} else {
       console.log('tags entered');
       return el(

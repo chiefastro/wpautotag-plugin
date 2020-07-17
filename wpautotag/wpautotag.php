@@ -54,8 +54,9 @@ function wpat_script_enqueue_edit_post($hook) {
   	wp_enqueue_script(
       'ajax-script-wpat-edit-post',
       // plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
-      plugins_url( '/js/wpat-edit-post-v2.js', __FILE__ ),
-      array('jquery')
+      plugins_url( '/js/wpat-edit-post-v2.js', __FILE__ )
+      // array('jquery', 'wp-element', 'wp-i18n', 'wp-editor')
+      // ['wp-element']
     );
     $category_prior = wpat_get_category_prior();
     $actual_categories = wpat_get_actual_categories($post->ID);
@@ -81,7 +82,9 @@ function wpat_add_suggested_category_box()
             'wpat_suggested_category_box',
             'Suggested Category',
             'wpat_suggested_category_html',
-            $screen
+            $screen,
+            'side',
+            'high'
         );
     }
 }
@@ -94,7 +97,7 @@ function wpat_suggested_category_html() {
     $post->post_content, $category_prior, $actual_categories
   );
   ?>
-  <p>Categories suggested by WP Auto Tag</p>
+  <p>Categories suggested by WP Auto Tag - testing</p>
   <input
     type="checkbox"
     id="wpat_suggested_category_checkbox"
