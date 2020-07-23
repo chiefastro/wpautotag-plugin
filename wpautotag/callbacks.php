@@ -8,7 +8,7 @@ add_action( 'rest_api_init', 'wpat_suggested_category_api');
 function wpat_suggested_category_api(){
   register_rest_route(
     'wpautotag/v1',
-    '/category/',
+    '/category/suggest/',
     array(
       'methods' => 'POST',
       'callback' => 'wpat_get_suggested_category_rest',
@@ -36,6 +36,26 @@ function wpat_get_suggested_category_rest( WP_REST_Request $data ) {
     $actual_categories
   );
   return $suggested_category;
+}
+add_action( 'rest_api_init', 'wpat_add_category_api');
+function wpat_add_category_api(){
+  register_rest_route(
+    'wpautotag/v1',
+    '/category/add/',
+    array(
+      'methods' => 'POST',
+      'callback' => 'wpat_add_category_rest',
+      'permission_callback' => function () {
+        return current_user_can( 'manage_categories' );
+      }
+    ));
+};
+function wpat_add_category_rest( WP_REST_Request $data ) {
+  if (file_exists (ABSPATH.'/wp-admin/includes/taxonomy.php')) {
+    require_once (ABSPATH.'/wp-admin/includes/taxonomy.php');
+  }
+  $category_name = isset($data['category_name']) ? $data['category_name'] : '';
+  return intval(wp_create_category($category_name));
 }
 
 function wpat_refresh_suggested_category() {

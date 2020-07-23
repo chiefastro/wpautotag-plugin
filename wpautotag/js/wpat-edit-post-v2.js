@@ -6,6 +6,7 @@ const el = wp.element.createElement;
 const { Fragment } = wp.element;
 const __ = wp.i18n.__;
 const Component = wp.element.Component;
+// const useState = wp.element.useState;
 const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
 const TextControl = wp.components.TextControl;
 const CheckboxControl = wp.components.CheckboxControl;
@@ -59,7 +60,13 @@ registerStore( wpatCategoryNamespace, {
 function arrEqual(a, b) {
   return a.length === b.length && a.every(value => b.includes(value));
 }
-
+function swapKeyValue(obj){
+  var ret = {};
+  for(var key in obj){
+    ret[obj[key]] = key;
+  }
+  return ret;
+}
 // Component
 class SuggestedCategoryComponent extends Component {
   // init and define subscriptions
@@ -93,14 +100,14 @@ class SuggestedCategoryComponent extends Component {
         };
         console.log(payload);
         wp.apiRequest( {
-          path: 'wpautotag/v1/category',
+          path: 'wpautotag/v1/category/suggest',
           method: 'POST',
           data: payload
         } ).then(
           ( data ) => {
             console.log('response');
             console.log(data);
-            const newSuggestedCategory = 'testing render'; //data;
+            const newSuggestedCategory = data;
             if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
               // prevent infinite loop while saving
               // update rendered value
@@ -122,38 +129,103 @@ class SuggestedCategoryComponent extends Component {
   };
   // render
   render() {
-    // return el(
-    //   'div',
-    //   {key: 'wpat_category_container'},
-    //   [
-    //     el(
-    //       HierarchicalTermSelector,
-    //       {
-    //         key: 'wpat_standard_category_container'
-    //       }
-    //     ),
-    //     el(
-    //       TextControl,
-    //       {
-    //           key: 'wpat_suggested_category',
-    //           label: __( 'Suggested Category', 'wpat' ),
-    //           help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
-    //           spellCheck: true,
-    //           maxLength: 100,
-    //           value: this.state.suggestedCategory,
-    //       }
-    //     )
-    //   ]
-    // );
+    // const [ isChecked, setChecked ] = useState( false );
+    const isActualChecked = this.props.actualCategories.includes(this.state.suggestedCategory)
+    // const catExists = Object.values(this.props.catIdNameMap).includes(this.state.suggestedCategory)
+    const catId = parseInt(swapKeyValue(this.props.catIdNameMap)[this.state.suggestedCategory], 10)
     return el(
-      TextControl,
+      CheckboxControl,
       {
-          name: 'wpat_suggested_category',
-          label: __( 'Suggested Category', 'wpat' ),
-          help: __( 'Categories suggested by WP Auto Tag', 'wpat' ),
-          spellCheck: true,
-          maxLength: 100,
-          value: this.state.suggestedCategory,
+        name: 'wpat_suggested_category_checkbox',
+        label: this.state.suggestedCategory,
+        help: __( 'Suggested Category', 'wpat' ),
+        checked: isActualChecked,
+        onChange: (updateChecked) => {
+          console.log(this.props);
+          // console.log(this.props.originalComponent);
+          // console.log(this.props.originalComponent.prototype);
+          // console.log(this.props.originalComponent());
+          // console.log(this.props.children.);
+          // this.props.originalComponent.prototype.onChange(catId);
+
+          console.log(this.props.hierarchicalTermSelector);
+          var newSelectedTerms = JSON.parse(
+            JSON.stringify(this.props.hierarchicalTermSelector.terms)
+          )
+          var suggestedTerm = JSON.parse(
+            JSON.stringify(this.state.suggestedCategory)
+          )
+          console.log(newSelectedTerms);
+          const termIdx = newSelectedTerms.indexOf(catId);
+          console.log(termIdx)
+          console.log(catId)
+
+          if ((termIdx > -1) && !updateChecked) {
+            // term selected and user wants to unassign
+            newSelectedTerms.splice(termIdx, 1);
+          } else if (catId && updateChecked) {
+            // term exists and user wants to assign
+            newSelectedTerms.push(catId);
+          } else if (!catId && updateChecked) {
+            // term doesn't exist and user wants to assign
+            // trigger add new term
+            console.log('add new term');
+            let addTermButton = document.getElementsByClassName(
+              "editor-post-taxonomies__hierarchical-terms-add"
+            )[0]
+            addTermButton.onclick = function prefillNewTerm() {
+              var checkExist = setInterval(function() {
+                console.log('checking existence');
+                var elems = document.getElementsByClassName(
+                  "editor-post-taxonomies__hierarchical-terms-input"
+                )
+                if (elems.length) {
+                  // can't use the simple commented line below, see article
+                  // below for why the complicated code is needed instead
+                  // elems[0].value = suggestedTerm;
+                  // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
+                  var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                    window.HTMLInputElement.prototype, "value"
+                  ).set;
+                  nativeInputValueSetter.call(elems[0], suggestedTerm);
+                  elems[0].dispatchEvent(new Event('input', { bubbles: true }));
+                  clearInterval(checkExist);
+                }
+              }, 100); // check every 100ms
+            }
+            addTermButton.click();
+          }
+          console.log(newSelectedTerms);
+          // set state of suggested category checkbox
+          this.setState( {
+            checked: updateChecked
+          });
+          // set checked state of category in standard list
+          this.props.hierarchicalTermSelector.onUpdateTerms(
+            newSelectedTerms,
+            this.props.hierarchicalTermSelector.taxonomy.rest_base
+          );
+        }
+        //   // assign suggested category and create if not exists
+        //   var data = {
+        //     'action': 'wpat_assign_suggested_category',
+        //     'assigned_category': this.state.suggestedCategory,
+        //     'unassign': !updateChecked,
+        //     'post_id': wp.data.select( "core/editor" ).getCurrentPostId()
+        //   };
+        //   console.log(data);
+        //   wp.apiRequest( {
+        //     path: 'wpautotag/v1/category/assign',
+        //     method: 'POST',
+        //     data: payload
+        //   } ).then(
+        //     ( data ) => {
+        //       // set checked state of category in standard list
+        //       console.log()
+        //       this.setState( {
+        //         checked: updateChecked
+        //       });
+        // }
       }
     );
   };
@@ -207,6 +279,7 @@ const SuggestedCategoryComponentHOC = compose( [
             savedPostContent: savedPostContent,
             actualCategories: actualCategories,
             savedActualCategories: savedActualCategories,
+            catIdNameMap: catIdNameMap,
             getSuggestedCategory: getSuggestedCategory,
         };
     } ),
@@ -235,11 +308,6 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
 	return function( props ) {
     console.log('filter entered');
     console.log(props);
-    // return el(
-		// 	'div',
-		// 	{},
-		// 	'Element inserted'
-		// );
 		if ( props.slug === 'category' ) {
       console.log('category entered');
       return el(
@@ -248,7 +316,13 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
         [
           el(
             SuggestedCategoryComponentHOC,
-            {key: 'wpat_suggested_category_container'}
+            {
+              key: 'wpat_suggested_category_container',
+              hierarchicalTermSelector: props,
+              originalComponent: OriginalComponent
+            },
+
+            // send some props for category selectors?
           ),
           el(
             OriginalComponent,
@@ -269,15 +343,6 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
   				props
         )
   		);
-      // return el(
-			// 	OriginalComponent,
-			// 	props,
-      //   el(
-    	// 		'div',
-    	// 		{},
-    	// 		'Element inserted'
-    	// 	)
-			// );
 		}
 	}
 };

@@ -54,8 +54,8 @@ function wpat_script_enqueue_edit_post($hook) {
   	wp_enqueue_script(
       'ajax-script-wpat-edit-post',
       // plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
-      plugins_url( '/js/wpat-edit-post-v2.js', __FILE__ )
-      // array('jquery', 'wp-element', 'wp-i18n', 'wp-editor')
+      plugins_url( '/js/wpat-edit-post-v2.js', __FILE__ ),
+      array('jquery') //, 'wp-element', 'wp-i18n', 'wp-editor')
       // ['wp-element']
     );
     $category_prior = wpat_get_category_prior();
