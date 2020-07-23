@@ -22,7 +22,8 @@ const withDispatch = wp.data.withDispatch;
 // Register store for suggested category
 // Reducer
 const initial_state = {
-    'suggestedCategory': ajax_object.suggested_category
+    'suggestedCategory': ajax_object.suggested_category,
+    'addedCatIds': []
 };
 function reducer( state = initial_state, action ) {
   if ( action.type === 'SET_SUGGESTED_CATEGORY' ) {
@@ -30,14 +31,22 @@ function reducer( state = initial_state, action ) {
       ...state,
       suggestedCategory: action.suggestedCategory
     };
-  };
+  } else if (action.type === 'ADD_CATEGORY') {
+    newState = {...state};
+    newState.addedCatIds.push(action.addedCatId);
+    return newState;
+  }
   return state;
 };
 // Selectors
 const selectors = {
   getSuggestedCategory( state ) {
     return state.suggestedCategory;
+  },
+  getAddedCatIds( state ) {
+    return state.addedCatIds;
   }
+
 };
 // Actions
 const actions = {
@@ -46,7 +55,14 @@ const actions = {
       type: 'SET_SUGGESTED_CATEGORY',
       suggestedCategory: suggestedCategory
     };
+  },
+  addCatId( catId ) {
+    return {
+      type: 'ADD_CATEGORY',
+      addedCatId: catId
+    };
   }
+
 };
 // Register
 const wpatCategoryNamespace = 'wpautotag-plugin/suggested-category'
@@ -73,11 +89,18 @@ class SuggestedCategoryComponent extends Component {
   constructor() {
     super( ...arguments );
     this.state = {
-        suggestedCategory: this.props.getSuggestedCategory()
-    }; //initial_state;
-    console.log(this.state);
+        suggestedCategory: this.props.getSuggestedCategory(),
+        addedCatIds: this.props.getAddedCatIds()
+    };
     wp.data.subscribe(() => {
       console.log('subscription trigger');
+      if (
+        (this.props.newCatId) &&
+        !(this.props.getAddedCatIds().includes(this.props.newCatId))
+      ) {
+        console.log('adding cat id to store');
+        this.props.addCatId(this.props.newCatId);
+      }
       // refresh suggested category if saving and edited post content
       // different from saved post content
       const catsEqual = arrEqual(
@@ -131,6 +154,7 @@ class SuggestedCategoryComponent extends Component {
   render() {
     // const [ isChecked, setChecked ] = useState( false );
     const isActualChecked = this.props.actualCategories.includes(this.state.suggestedCategory)
+    console.log(this.props.actualCategories);
     // const catExists = Object.values(this.props.catIdNameMap).includes(this.state.suggestedCategory)
     const catId = parseInt(swapKeyValue(this.props.catIdNameMap)[this.state.suggestedCategory], 10)
     return el(
@@ -142,19 +166,16 @@ class SuggestedCategoryComponent extends Component {
         checked: isActualChecked,
         onChange: (updateChecked) => {
           console.log(this.props);
-          // console.log(this.props.originalComponent);
-          // console.log(this.props.originalComponent.prototype);
-          // console.log(this.props.originalComponent());
-          // console.log(this.props.children.);
-          // this.props.originalComponent.prototype.onChange(catId);
 
           console.log(this.props.hierarchicalTermSelector);
           var newSelectedTerms = JSON.parse(
             JSON.stringify(this.props.hierarchicalTermSelector.terms)
-          )
+          );
           var suggestedTerm = JSON.parse(
-            JSON.stringify(this.state.suggestedCategory)
-          )
+            JSON.stringify(
+              !catId ? this.state.suggestedCategory : ''
+            )
+          );
           console.log(newSelectedTerms);
           const termIdx = newSelectedTerms.indexOf(catId);
           console.log(termIdx)
@@ -174,24 +195,30 @@ class SuggestedCategoryComponent extends Component {
               "editor-post-taxonomies__hierarchical-terms-add"
             )[0]
             addTermButton.onclick = function prefillNewTerm() {
-              var checkExist = setInterval(function() {
-                console.log('checking existence');
-                var elems = document.getElementsByClassName(
-                  "editor-post-taxonomies__hierarchical-terms-input"
-                )
-                if (elems.length) {
-                  // can't use the simple commented line below, see article
-                  // below for why the complicated code is needed instead
-                  // elems[0].value = suggestedTerm;
-                  // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
-                  var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                    window.HTMLInputElement.prototype, "value"
-                  ).set;
-                  nativeInputValueSetter.call(elems[0], suggestedTerm);
-                  elems[0].dispatchEvent(new Event('input', { bubbles: true }));
-                  clearInterval(checkExist);
-                }
-              }, 100); // check every 100ms
+              console.log(this);
+              console.log(this.getAttribute('aria-expanded'));
+              if (this.getAttribute('aria-expanded') == 'false') {
+                // form opened, prefill new term
+                // (value is switched later, so trigger this when false)
+                var checkExist = setInterval(function() {
+                  console.log('checking existence');
+                  var elems = document.getElementsByClassName(
+                    "editor-post-taxonomies__hierarchical-terms-input"
+                  )
+                  if (elems.length) {
+                    // can't use the simple commented line below, see article
+                    // below for why the complicated code is needed instead
+                    // elems[0].value = suggestedTerm;
+                    // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
+                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                      window.HTMLInputElement.prototype, "value"
+                    ).set;
+                    nativeInputValueSetter.call(elems[0], suggestedTerm);
+                    elems[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    clearInterval(checkExist);
+                  }
+                }, 100); // check every 100ms
+              }
             }
             addTermButton.click();
           }
@@ -206,26 +233,6 @@ class SuggestedCategoryComponent extends Component {
             this.props.hierarchicalTermSelector.taxonomy.rest_base
           );
         }
-        //   // assign suggested category and create if not exists
-        //   var data = {
-        //     'action': 'wpat_assign_suggested_category',
-        //     'assigned_category': this.state.suggestedCategory,
-        //     'unassign': !updateChecked,
-        //     'post_id': wp.data.select( "core/editor" ).getCurrentPostId()
-        //   };
-        //   console.log(data);
-        //   wp.apiRequest( {
-        //     path: 'wpautotag/v1/category/assign',
-        //     method: 'POST',
-        //     data: payload
-        //   } ).then(
-        //     ( data ) => {
-        //       // set checked state of category in standard list
-        //       console.log()
-        //       this.setState( {
-        //         checked: updateChecked
-        //       });
-        // }
       }
     );
   };
@@ -241,7 +248,8 @@ const SuggestedCategoryComponentHOC = compose( [
             hasChangedContent
         } = select( 'core/editor' );
         const {
-            getSuggestedCategory
+            getSuggestedCategory,
+            getAddedCatIds
         } = select( wpatCategoryNamespace );
         const savedPostContent = select( "core/editor" ).getCurrentPost().content;
         const postContent = select( "core/editor" ).getEditedPostContent();
@@ -249,6 +257,8 @@ const SuggestedCategoryComponentHOC = compose( [
         const savedCatIds = select( 'core/editor' ).getCurrentPostAttribute( 'categories' );
         const catIds = select( 'core/editor' ).getEditedPostAttribute( 'categories' );
         const catObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'category' );
+        const addedCatIds = getAddedCatIds();
+        var newCatId = false;
         var catIdNameMap = {};
         if (catObjs) {
           catObjs.forEach((catObj, i) => {
@@ -257,10 +267,38 @@ const SuggestedCategoryComponentHOC = compose( [
             }
           });
         };
+        if (addedCatIds.length) {
+          console.log('has addedCatIds');
+          console.log(addedCatIds);
+          addedCatIds.forEach((catId, i) => {
+            catObj = select( 'core' ).getEntityRecord(
+              'taxonomy', 'category', catId
+            );
+            if (typeof catObj !== 'undefined') {
+              console.log('adding to catIdNameMap');
+              catIdNameMap[catId] = catObj.name;
+            }
+          });
+        }
         var actualCategories = [];
         if (catIds) {
           catIds.forEach((catId, i) => {
-            actualCategories.push(catIdNameMap[catId]);
+            let catName = catIdNameMap[catId];
+            if (typeof catName === 'undefined') {
+              // getEntityRecords doesn't update cache after adding term
+              catObj = select( 'core' ).getEntityRecord(
+                'taxonomy', 'category', catId
+              );
+              if (typeof catObj !== 'undefined') {
+                catName = catObj.name;
+                // add to catIdNameMap, which is missing this term in this case
+                catIdNameMap[catId] = catName;
+                // save to store so cat can be unassigned
+                console.log('new cat detected');
+                newCatId = catId;
+              }
+            }
+            actualCategories.push(catName);
           });
         };
         var savedActualCategories = [];
@@ -281,15 +319,19 @@ const SuggestedCategoryComponentHOC = compose( [
             savedActualCategories: savedActualCategories,
             catIdNameMap: catIdNameMap,
             getSuggestedCategory: getSuggestedCategory,
+            getAddedCatIds: getAddedCatIds,
+            newCatId: newCatId
         };
     } ),
     withDispatch( ( dispatch ) => {
         const {
-            setSuggestedCategory
+            setSuggestedCategory,
+            addCatId
         } = dispatch( wpatCategoryNamespace );
         console.log('dispatching');
         return {
             setSuggestedCategory: setSuggestedCategory,
+            addCatId: addCatId
         };
     } )
 ])( SuggestedCategoryComponent );
