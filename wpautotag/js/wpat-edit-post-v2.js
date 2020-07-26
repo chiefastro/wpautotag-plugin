@@ -88,86 +88,82 @@ class SuggestedCategoryComponent extends Component {
   // init and define subscriptions
   constructor() {
     super( ...arguments );
+    this.maybeRefresh = this.maybeRefresh.bind( this );
     this.state = {
         suggestedCategory: this.props.getSuggestedCategory(),
-        addedCatIds: this.props.getAddedCatIds(),
-        isRefreshing: false
+        addedCatIds: this.props.getAddedCatIds()//,
+        // isRefreshing: false
     };
-    wp.data.subscribe(() => {
-      console.log('subscription trigger');
-      if (
-        (this.props.newCatId) &&
-        !(this.props.getAddedCatIds().includes(this.props.newCatId))
-      ) {
-        console.log('adding cat id to store');
-        this.props.addCatId(this.props.newCatId);
-      }
-      // refresh suggested category if saving and edited post content
-      // different from saved post content
-      const catsEqual = arrEqual(
-        this.props.actualCategories, this.props.savedActualCategories
-      )
-      console.log(this.state);
-      if (
-          (
-            (this.props.isSavingPost || this.props.isAutosavingPost) ||
-            this.state.isRefreshing
-          )
-          &&
-          (
-            (this.props.postContent != this.props.savedPostContent) ||
-            (!catsEqual)
-          )
-      ) {
-        // Get new suggested categories from API
-        console.log('saving condition met');
-        console.log(this.props);
-        var payload = {
-          'post_content': this.props.postContent,
-          'category_prior': ajax_object.category_prior,
-          'actual_categories': this.props.actualCategories
-        };
-        console.log(payload);
-        wp.apiRequest( {
-          path: 'wpautotag/v1/category/suggest',
-          method: 'POST',
-          data: payload
-        } ).then(
-          ( data ) => {
-            console.log('response');
-            console.log(data);
-            const newSuggestedCategory = data;
-            if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
-              // prevent infinite loop while saving
-              // update rendered value
-              this.setState( {
-                  suggestedCategory: newSuggestedCategory
-              });
-              // set in datastore
-              this.props.setSuggestedCategory(newSuggestedCategory);
-              // done refreshing suggested category
-              this.setState({
-                isRefreshing: false
-              });
-            }
-          },
-          ( err ) => {
-            console.log('error');
-            console.log(err);
-            return err;
-          }
-        );
+    wp.data.subscribe(this.maybeRefresh);
+  };
+  maybeRefresh(isRefreshing=false) {
+    console.log('subscription trigger', isRefreshing);
+    if (
+      (this.props.newCatId) &&
+      !(this.props.getAddedCatIds().includes(this.props.newCatId))
+    ) {
+      console.log('adding cat id to store');
+      this.props.addCatId(this.props.newCatId);
+    }
+    // refresh suggested category if saving and edited post content
+    // different from saved post content
+    const catsEqual = arrEqual(
+      this.props.actualCategories, this.props.savedActualCategories
+    )
+    if (
+        (this.props.isSavingPost || this.props.isAutosavingPost ||
+         isRefreshing
+        )
+        &&
+        (
+          (this.props.postContent != this.props.savedPostContent) ||
+          (!catsEqual)
+        )
+    ) {
+      // Get new suggested categories from API
+      console.log('saving condition met');
+      console.log(this.props);
+      var payload = {
+        'post_content': this.props.postContent,
+        'category_prior': ajax_object.category_prior,
+        'actual_categories': this.props.actualCategories
       };
-    });
+      console.log(payload);
+      wp.apiRequest( {
+        path: 'wpautotag/v1/category/suggest',
+        method: 'POST',
+        data: payload
+      } ).then(
+        ( data ) => {
+          console.log('response');
+          console.log(data);
+          const newSuggestedCategory = data;
+          if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
+            // prevent infinite loop while saving
+            // update rendered value
+            this.setState( {
+                suggestedCategory: newSuggestedCategory
+            });
+            // set in datastore
+            this.props.setSuggestedCategory(newSuggestedCategory);
+          }
+        },
+        ( err ) => {
+          console.log('error');
+          console.log(err);
+          return err;
+        }
+      );
+    };
   };
   // render
   render() {
     // const [ isChecked, setChecked ] = useState( false );
     const isActualChecked = this.props.actualCategories.includes(this.state.suggestedCategory)
-    console.log(this.props.actualCategories);
+    // console.log(this.props.actualCategories);
     // const catExists = Object.values(this.props.catIdNameMap).includes(this.state.suggestedCategory)
     const catId = parseInt(swapKeyValue(this.props.catIdNameMap)[this.state.suggestedCategory], 10)
-    console.log(this);
+    // console.log(this.state);
     return el(
       'div',
       {
@@ -281,10 +277,7 @@ class SuggestedCategoryComponent extends Component {
                 iconSize: 16,
                 onClick: () => {
                   console.log('refresh clicked');
-                  console.log(this);
-                  this.setState({
-                    isRefreshing: true
-                  });
+                  this.maybeRefresh(true);
                 }
               }
             )
@@ -325,14 +318,11 @@ const SuggestedCategoryComponentHOC = compose( [
           });
         };
         if (addedCatIds.length) {
-          console.log('has addedCatIds');
-          console.log(addedCatIds);
           addedCatIds.forEach((catId, i) => {
             catObj = select( 'core' ).getEntityRecord(
               'taxonomy', 'category', catId
             );
             if (typeof catObj !== 'undefined') {
-              console.log('adding to catIdNameMap');
               catIdNameMap[catId] = catObj.name;
             }
           });
