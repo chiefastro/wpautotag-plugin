@@ -8,7 +8,7 @@ const __ = wp.i18n.__;
 const Component = wp.element.Component;
 // const useState = wp.element.useState;
 const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
-const TextControl = wp.components.TextControl;
+const Button = wp.components.Button;
 const CheckboxControl = wp.components.CheckboxControl;
 const HierarchicalTermSelector = wp.editor.HierarchicalTermSelector;
 const registerPlugin = wp.plugins.registerPlugin;
@@ -90,7 +90,8 @@ class SuggestedCategoryComponent extends Component {
     super( ...arguments );
     this.state = {
         suggestedCategory: this.props.getSuggestedCategory(),
-        addedCatIds: this.props.getAddedCatIds()
+        addedCatIds: this.props.getAddedCatIds(),
+        isRefreshing: false
     };
     wp.data.subscribe(() => {
       console.log('subscription trigger');
@@ -106,8 +107,13 @@ class SuggestedCategoryComponent extends Component {
       const catsEqual = arrEqual(
         this.props.actualCategories, this.props.savedActualCategories
       )
+      console.log(this.state);
       if (
-          (this.props.isSavingPost || this.props.isAutosavingPost) &&
+          (
+            (this.props.isSavingPost || this.props.isAutosavingPost) ||
+            this.state.isRefreshing
+          )
+          &&
           (
             (this.props.postContent != this.props.savedPostContent) ||
             (!catsEqual)
@@ -139,6 +145,10 @@ class SuggestedCategoryComponent extends Component {
               });
               // set in datastore
               this.props.setSuggestedCategory(newSuggestedCategory);
+              // done refreshing suggested category
+              this.setState({
+                isRefreshing: false
+              });
             }
           },
           ( err ) => {
@@ -148,7 +158,7 @@ class SuggestedCategoryComponent extends Component {
           }
         );
       };
-    } );
+    });
   };
   // render
   render() {
@@ -157,83 +167,130 @@ class SuggestedCategoryComponent extends Component {
     console.log(this.props.actualCategories);
     // const catExists = Object.values(this.props.catIdNameMap).includes(this.state.suggestedCategory)
     const catId = parseInt(swapKeyValue(this.props.catIdNameMap)[this.state.suggestedCategory], 10)
+    console.log(this);
     return el(
-      CheckboxControl,
+      'div',
       {
-        name: 'wpat_suggested_category_checkbox',
-        label: this.state.suggestedCategory,
-        help: __( 'Suggested Category', 'wpat' ),
-        checked: isActualChecked,
-        onChange: (updateChecked) => {
-          console.log(this.props);
+        key: 'wpat_suggested_category_container',
+        className: 'wpat_suggested_category_container'
+      },
+      [
+        el(
+          'p',
+          {
+            key: 'wpat_suggested_category_header',
+            className: 'wpat_suggested_category_header'
+          },
+          __( 'Suggested Category', 'wpat' )
+        ),
+        el(
+          'div',
+          {
+            key: 'wpat_suggested_category_actions',
+            className: 'wpat_suggested_category_actions'
+          },
+          [
+            el(
+              CheckboxControl,
+              {
+                name: 'wpat_suggested_category_checkbox',
+                key:  'wpat_suggested_category_checkbox',
+                label: this.state.suggestedCategory,
+                // help: __( 'Suggested Category', 'wpat' ),
+                checked: isActualChecked,
+                onChange: (updateChecked) => {
+                  console.log(this.props);
 
-          console.log(this.props.hierarchicalTermSelector);
-          var newSelectedTerms = JSON.parse(
-            JSON.stringify(this.props.hierarchicalTermSelector.terms)
-          );
-          var suggestedTerm = JSON.parse(
-            JSON.stringify(
-              !catId ? this.state.suggestedCategory : ''
-            )
-          );
-          console.log(newSelectedTerms);
-          const termIdx = newSelectedTerms.indexOf(catId);
-          console.log(termIdx)
-          console.log(catId)
+                  console.log(this.props.hierarchicalTermSelector);
+                  var newSelectedTerms = JSON.parse(
+                    JSON.stringify(this.props.hierarchicalTermSelector.terms)
+                  );
+                  var suggestedTerm = JSON.parse(
+                    JSON.stringify(
+                      !catId ? this.state.suggestedCategory : ''
+                    )
+                  );
+                  console.log(newSelectedTerms);
+                  const termIdx = newSelectedTerms.indexOf(catId);
+                  console.log(termIdx)
+                  console.log(catId)
 
-          if ((termIdx > -1) && !updateChecked) {
-            // term selected and user wants to unassign
-            newSelectedTerms.splice(termIdx, 1);
-          } else if (catId && updateChecked) {
-            // term exists and user wants to assign
-            newSelectedTerms.push(catId);
-          } else if (!catId && updateChecked) {
-            // term doesn't exist and user wants to assign
-            // trigger add new term
-            console.log('add new term');
-            let addTermButton = document.getElementsByClassName(
-              "editor-post-taxonomies__hierarchical-terms-add"
-            )[0]
-            addTermButton.onclick = function prefillNewTerm() {
-              console.log(this);
-              console.log(this.getAttribute('aria-expanded'));
-              if (this.getAttribute('aria-expanded') == 'false') {
-                // form opened, prefill new term
-                // (value is switched later, so trigger this when false)
-                var checkExist = setInterval(function() {
-                  console.log('checking existence');
-                  var elems = document.getElementsByClassName(
-                    "editor-post-taxonomies__hierarchical-terms-input"
-                  )
-                  if (elems.length) {
-                    // can't use the simple commented line below, see article
-                    // below for why the complicated code is needed instead
-                    // elems[0].value = suggestedTerm;
-                    // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
-                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                      window.HTMLInputElement.prototype, "value"
-                    ).set;
-                    nativeInputValueSetter.call(elems[0], suggestedTerm);
-                    elems[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    clearInterval(checkExist);
+                  if ((termIdx > -1) && !updateChecked) {
+                    // term selected and user wants to unassign
+                    newSelectedTerms.splice(termIdx, 1);
+                  } else if (catId && updateChecked) {
+                    // term exists and user wants to assign
+                    newSelectedTerms.push(catId);
+                  } else if (!catId && updateChecked) {
+                    // term doesn't exist and user wants to assign
+                    // trigger add new term
+                    console.log('add new term');
+                    let addTermButton = document.getElementsByClassName(
+                      "editor-post-taxonomies__hierarchical-terms-add"
+                    )[0]
+                    addTermButton.onclick = function prefillNewTerm() {
+                      console.log(this);
+                      console.log(this.getAttribute('aria-expanded'));
+                      if (this.getAttribute('aria-expanded') == 'false') {
+                        // form opened, prefill new term
+                        // (value is switched later, so trigger this when false)
+                        var checkExist = setInterval(function() {
+                          console.log('checking existence');
+                          var elems = document.getElementsByClassName(
+                            "editor-post-taxonomies__hierarchical-terms-input"
+                          )
+                          if (elems.length) {
+                            // can't use the simple commented line below, see article
+                            // below for why the complicated code is needed instead
+                            // elems[0].value = suggestedTerm;
+                            // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
+                            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                              window.HTMLInputElement.prototype, "value"
+                            ).set;
+                            nativeInputValueSetter.call(elems[0], suggestedTerm);
+                            elems[0].dispatchEvent(new Event('input', { bubbles: true }));
+                            clearInterval(checkExist);
+                          }
+                        }, 100); // check every 100ms
+                      }
+                    }
+                    addTermButton.click();
                   }
-                }, 100); // check every 100ms
+                  console.log(newSelectedTerms);
+                  // set state of suggested category checkbox
+                  this.setState( {
+                    checked: updateChecked
+                  });
+                  // set checked state of category in standard list
+                  this.props.hierarchicalTermSelector.onUpdateTerms(
+                    newSelectedTerms,
+                    this.props.hierarchicalTermSelector.taxonomy.rest_base
+                  );
+                }
               }
-            }
-            addTermButton.click();
-          }
-          console.log(newSelectedTerms);
-          // set state of suggested category checkbox
-          this.setState( {
-            checked: updateChecked
-          });
-          // set checked state of category in standard list
-          this.props.hierarchicalTermSelector.onUpdateTerms(
-            newSelectedTerms,
-            this.props.hierarchicalTermSelector.taxonomy.rest_base
-          );
-        }
-      }
+            ),
+            el(
+              Button,
+              {
+                icon: 'image-rotate',
+                label: 'Refresh suggested category',
+                key: 'wpat_suggested_category_refresh',
+                isSmall: true,
+                showTooltip: true,
+                className: 'wpat_suggested_category_refresh',
+                iconSize: 16,
+                onClick: () => {
+                  console.log('refresh clicked');
+                  console.log(this);
+                  this.setState({
+                    isRefreshing: true
+                  });
+                }
+              }
+            )
+          ]
+        )
+      ]
     );
   };
 };
@@ -354,23 +411,20 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
       console.log('category entered');
       return el(
         'div',
-        {key: 'wpat_category_container'},
+        {key: 'wpat_category_container_' + props.instanceId},
         [
           el(
             SuggestedCategoryComponentHOC,
             {
-              key: 'wpat_suggested_category_container',
-              hierarchicalTermSelector: props,
-              originalComponent: OriginalComponent
+              key: 'wpat_suggested_category_container_' + props.instanceId,
+              hierarchicalTermSelector: props
             },
-
-            // send some props for category selectors?
           ),
           el(
             OriginalComponent,
             {
               ...props,
-              key: 'wpat_standard_category_container'
+              key: 'wpat_standard_category_container_' + props.instanceId
             }
           )
         ]
