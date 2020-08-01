@@ -31,7 +31,6 @@ function wpat_enqueue_styles() {
 }
 
 function wpat_get_category_prior() {
-  // $category_prior = wp_list_categories(array('show_count' => True));
   $raw_category_list = get_categories(array('count' => True));
   $category_prior = array();
   foreach ($raw_category_list as $category_obj) {
@@ -53,10 +52,8 @@ function wpat_script_enqueue_edit_post($hook) {
   if ( $hook == 'post-new.php' || $hook == 'post.php' ) {
   	wp_enqueue_script(
       'ajax-script-wpat-edit-post',
-      // plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
-      plugins_url( '/js/wpat-edit-post-v2.js', __FILE__ ),
-      array('jquery') //, 'wp-element', 'wp-i18n', 'wp-editor')
-      // ['wp-element']
+      plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
+      array('jquery')
     );
     $category_prior = wpat_get_category_prior();
     $actual_categories = wpat_get_actual_categories($post->ID);
@@ -73,42 +70,5 @@ function wpat_script_enqueue_edit_post($hook) {
       )
     );
   }
-}
-function wpat_add_suggested_category_box()
-{
-    $screens = ['post'];
-    foreach ($screens as $screen) {
-        add_meta_box(
-            'wpat_suggested_category_box',
-            'Suggested Category',
-            'wpat_suggested_category_html',
-            $screen,
-            'side',
-            'high'
-        );
-    }
-}
-add_action('add_meta_boxes', 'wpat_add_suggested_category_box');
-function wpat_suggested_category_html() {
-  global $post;
-  $category_prior = wpat_get_category_prior();
-  $actual_categories = wpat_get_actual_categories($post->ID);
-  $suggested_category = wpat_get_suggested_category(
-    $post->post_content, $category_prior, $actual_categories
-  );
-  ?>
-  <p>Categories suggested by WP Auto Tag - testing</p>
-  <input
-    type="checkbox"
-    id="wpat_suggested_category_checkbox"
-    name="wpat_suggested_category_checkbox"
-  >
-  <label id='wpat_suggested_category_label' for="wpat_suggested_category_checkbox">
-    <?php echo $suggested_category ?>
-  </label>
-  <input type="hidden" id="wpat_suggested_category" name="wpat_suggested_category" value="<?php echo $suggested_category ?>">
-  <!-- <button id="wpat_assign_suggested_category_button" class="wpat_category_actions">Assign Suggested Category</button> -->
-  <button id="wpat_refresh_suggested_category_button" class="wpat_category_actions">Refresh Suggested Category</button>
-  <?php
 }
 ?>
