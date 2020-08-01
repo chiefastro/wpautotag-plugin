@@ -4,36 +4,32 @@ if (is_admin()) {
   add_action('wp_ajax_wpat_assign_suggested_category', 'wpat_assign_suggested_category');
 }
 
-function wpat_refresh_suggested_category() {
+add_action( 'rest_api_init', 'wpat_suggested_category_api');
+function wpat_suggested_category_api(){
+  register_rest_route(
+    'wpautotag/v1',
+    '/category/suggest/',
+    array(
+      'methods' => 'POST',
+      'callback' => 'wpat_get_suggested_category_rest'
+    ));
+};
+function wpat_get_suggested_category_rest( WP_REST_Request $data ) {
+  $post_content = isset($data['post_content']) ? $data['post_content'] : '';
+  $category_prior = isset($data['category_prior']) ? $data['category_prior'] : array();
+  $actual_categories = isset($data['actual_categories']) ? $data['actual_categories'] : array();
   $suggested_category = wpat_get_suggested_category(
-    $_POST['post_content'],
-    $_POST['category_prior'],
-    $_POST['actual_categories']
+    $post_content,
+    $category_prior,
+    $actual_categories
   );
-  echo $suggested_category;
-  wp_die();
+  return $suggested_category;
 }
 function wpat_get_suggested_category(
   $content, $category_prior, $actual_categories
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'category-api.php' );
   return wpat_call_category_api($content, $category_prior, $actual_categories);
-}
-function wpat_display_suggested_category($suggested_category) {
-  echo $suggested_category;
-}
-function wpat_assign_suggested_category() {
-    $assigned_category = $_POST['assigned_category'];
-    $post_id = intval($_POST['post_id']);
-    $unassign = $_POST['unassign'] === 'true';
-    $category_id = intval(wp_create_category($assigned_category));
-    if ($unassign) {
-      wp_remove_object_terms($post_id, $category_id, 'category');
-    } else {
-      wp_set_post_categories($post_id, $category_id, $append=True);
-    }
-
-    wp_die();
 }
 
 ?>
