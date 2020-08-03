@@ -22,7 +22,7 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
   error_log(print_r($payload, true));
   $header = array();
   $header[] = 'Content-Type: application/json';
-  $header[] = 'x-api-key: 6wEZ4Lm3QW1WJMGSterQd7m5QGLoJ39x35qUWxsr';
+  $header[] = 'x-api-key: ' . get_option('wpat_api_key');
 
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $endpoint_url);
@@ -39,7 +39,10 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
 
   error_log(print_r($body_decode, true));
   if ($status_code == 200) {
-    $result = $body_decode[0]->predicted_category;
+    $result = wpat_strcase(
+      $body_decode[0]->predicted_category,
+      get_option('wpat_capital_strategy')
+    );
   } else {
     $result = '';
   }
