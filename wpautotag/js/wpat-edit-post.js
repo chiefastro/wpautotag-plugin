@@ -76,10 +76,11 @@ registerStore( wpatCategoryNamespace, {
 function arrEqual(a, b) {
   return a.length === b.length && a.every(value => b.includes(value));
 }
-function swapKeyValue(obj){
+function swapKeyValue(obj, lowerNewKey=true){
   var ret = {};
   for(var key in obj){
-    ret[obj[key]] = key;
+    newKey = lowerNewKey ? obj[key].toLowerCase() : obj[key];
+    ret[newKey] = key;
   }
   return ret;
 }
@@ -111,14 +112,12 @@ class SuggestedCategoryComponent extends Component {
       this.props.actualCategories, this.props.savedActualCategories
     )
     if (
-        (this.props.isSavingPost || this.props.isAutosavingPost ||
-         isRefreshing
-        )
+        ((this.props.isSavingPost || this.props.isAutosavingPost)
         &&
         (
           (this.props.postContent != this.props.savedPostContent) ||
           (!catsEqual)
-        )
+        )) || isRefreshing
     ) {
       // Get new suggested categories from API
       console.log('saving condition met');
@@ -156,14 +155,26 @@ class SuggestedCategoryComponent extends Component {
       );
     };
   };
+
   // render
   render() {
-    // const [ isChecked, setChecked ] = useState( false );
-    const isActualChecked = this.props.actualCategories.includes(this.state.suggestedCategory)
-    // console.log(this.props.actualCategories);
-    // const catExists = Object.values(this.props.catIdNameMap).includes(this.state.suggestedCategory)
-    const catId = parseInt(swapKeyValue(this.props.catIdNameMap)[this.state.suggestedCategory], 10)
-    // console.log(this.state);
+    // check if suggested category is equivalent to a selected category
+    var actCatLower = []
+    this.props.actualCategories.forEach((cat) => {
+      if (cat) {
+        actCatLower.push(cat.toLowerCase())
+      }
+    });
+    const isActualChecked = actCatLower.includes(
+      this.state.suggestedCategory.toLowerCase()
+    )
+    // get id of suggested category
+    const catNameIdMapLower = swapKeyValue(this.props.catIdNameMap, true)
+    const catId = parseInt(
+      catNameIdMapLower[
+        this.state.suggestedCategory.toLowerCase()
+      ], 10
+    )
     return el(
       'div',
       {
@@ -192,7 +203,6 @@ class SuggestedCategoryComponent extends Component {
                 name: 'wpat_suggested_category_checkbox',
                 key:  'wpat_suggested_category_checkbox',
                 label: this.state.suggestedCategory,
-                // help: __( 'Suggested Category', 'wpat' ),
                 checked: isActualChecked,
                 onChange: (updateChecked) => {
                   console.log(this.props);
