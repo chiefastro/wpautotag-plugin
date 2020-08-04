@@ -162,9 +162,11 @@ class SuggestedCategoryComponent extends Component {
           }
         },
         ( err ) => {
+          console.log('unknown error');
+          console.log(err);
           // update rendered value
           const errorMsg = `Unknown error. Save your progress and reload the
-            page to try again.`;
+            page to get new suggestions.`;
           const errorCat = 'Error';
           this.setState( {
             suggestedCategory: errorCat,

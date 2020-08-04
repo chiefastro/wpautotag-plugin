@@ -22,11 +22,14 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
   $header = array();
   $header[] = 'Content-Type: application/json';
   $wpat_api_key = get_option('wpat_api_key');
-  $null_api_key_msg = 'API key required, please add one on the <a href="' .
-    menu_page_url('wpautotag-settings', false) .
-    '" target="_blank">settings page</a>.';
   if (!$wpat_api_key) {
     // api call will fail, return before even trying
+    if(!function_exists('menu_page_url')) {
+      require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    $null_api_key_msg = 'API key required, please add one on the <a href="' .
+      menu_page_url('wpautotag-settings', false) .
+      '" target="_blank">settings page</a>.';
     return array('status_code' => 403, 'response' => $null_api_key_msg);
   }
   $header[] = 'x-api-key: ' . $wpat_api_key;

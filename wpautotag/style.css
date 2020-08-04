@@ -8,6 +8,8 @@
   padding: 2px 4px 2px 2px;
   display: inline-block;
   width: 100%;
+  border-bottom: 1px solid #e2e4e7;
+  margin-bottom: 6px;
 }
 .wpat_suggested_category_actions {
   display: flex;
