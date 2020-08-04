@@ -17,12 +17,19 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
       )
     ]
   );
-  error_log(print_r($data, true));
   $payload = json_encode($data);
   error_log(print_r($payload, true));
   $header = array();
   $header[] = 'Content-Type: application/json';
-  $header[] = 'x-api-key: ' . get_option('wpat_api_key');
+  $wpat_api_key = get_option('wpat_api_key');
+  $null_api_key_msg = 'API key required, please add one on the <a href="' .
+    menu_page_url('wpautotag-settings', false) .
+    '" target="_blank">settings page</a>.';
+  if (!$wpat_api_key) {
+    // api call will fail, return before even trying
+    return array('status_code' => 403, 'response' => $null_api_key_msg);
+  }
+  $header[] = 'x-api-key: ' . $wpat_api_key;
 
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $endpoint_url);
@@ -43,9 +50,19 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
       $body_decode[0]->predicted_category,
       get_option('wpat_capital_strategy')
     );
+  } elseif ($status_code == 403) {
+    if ($wpat_api_key) {
+      $result = 'Invalid API key';
+    } else {
+      $result = $null_api_key_msg;
+    }
+  } elseif ($status_code == 429) {
+    $result = 'Too many requests. If this error persists, you may be over your
+      monthly quota of API calls. Please contact
+      <a href="mailto:hi@wpautotag.com">hi@wpautotag.com</a>.';
   } else {
-    $result = '';
+    $result = 'Error code: ' . $status_code . '<br>' . $body_decode->message;
   }
-  return $result;
+  return array('status_code' => $status_code, 'response' => $result);
 }
 ?>

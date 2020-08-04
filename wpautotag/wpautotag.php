@@ -80,16 +80,22 @@ function wpat_script_enqueue_edit_post($hook) {
     );
     $category_prior = wpat_get_category_prior();
     $actual_categories = wpat_get_actual_categories($post->ID);
-    $suggested_category = wpat_get_suggested_category(
+    $suggested_category_response = wpat_get_suggested_category(
       $post->post_content, $category_prior, $actual_categories
     );
+    $suggested_category = $suggested_category_response['status_code'] == 200 ?
+      $suggested_category_response['response'] : 'Error';
+    $error_msg = $suggested_category_response['status_code'] == 200 ?
+      '' : $suggested_category_response['response'];
+
   	wp_localize_script(
       'ajax-script-wpat-edit-post', 'ajax_object',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'category_prior' => $category_prior,
         'actual_categories' => $actual_categories,
-        'suggested_category' => $suggested_category
+        'suggested_category' => $suggested_category,
+        'error_msg' => $error_msg,
       )
     );
   }
