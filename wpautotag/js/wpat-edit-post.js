@@ -1,16 +1,8 @@
-// import { Fragment } from '@wordpress/element';
-// import { withSelect } from '@wordpress/data';
-// import { compose } from '@wordpress/compose';
-//
 const el = wp.element.createElement;
-const { Fragment } = wp.element;
 const __ = wp.i18n.__;
 const Component = wp.element.Component;
-// const useState = wp.element.useState;
-const PluginPostStatusInfo = wp.editPost.PluginPostStatusInfo;
 const Button = wp.components.Button;
 const CheckboxControl = wp.components.CheckboxControl;
-const HierarchicalTermSelector = wp.editor.HierarchicalTermSelector;
 const registerPlugin = wp.plugins.registerPlugin;
 const registerStore = wp.data.registerStore;
 const compose = wp.compose.compose;
@@ -23,7 +15,8 @@ const withDispatch = wp.data.withDispatch;
 // Reducer
 const initial_state = {
     'suggestedCategory': ajax_object.suggested_category,
-    'addedCatIds': []
+    'addedCatIds': [],
+    'errorClass': ajax_object.error_msg
 };
 function reducer( state = initial_state, action ) {
   if ( action.type === 'SET_SUGGESTED_CATEGORY' ) {
@@ -35,6 +28,11 @@ function reducer( state = initial_state, action ) {
     newState = {...state};
     newState.addedCatIds.push(action.addedCatId);
     return newState;
+  } else if (action.type === 'SET_ERROR_CLASS') {
+    return {
+      ...state,
+      errorClass: action.errorClass
+    };
   }
   return state;
 };
@@ -45,6 +43,9 @@ const selectors = {
   },
   getAddedCatIds( state ) {
     return state.addedCatIds;
+  },
+  getErrorClass( state ) {
+    return state.errorClass;
   }
 
 };
@@ -60,6 +61,12 @@ const actions = {
     return {
       type: 'ADD_CATEGORY',
       addedCatId: catId
+    };
+  },
+  setErrorClass( errorClass ) {
+    return {
+      type: 'SET_ERROR_CLASS',
+      errorClass: errorClass
     };
   }
 
@@ -84,6 +91,7 @@ function swapKeyValue(obj, lowerNewKey=true){
   }
   return ret;
 }
+
 // Component
 class SuggestedCategoryComponent extends Component {
   // init and define subscriptions
@@ -92,8 +100,8 @@ class SuggestedCategoryComponent extends Component {
     this.maybeRefresh = this.maybeRefresh.bind( this );
     this.state = {
         suggestedCategory: this.props.getSuggestedCategory(),
-        addedCatIds: this.props.getAddedCatIds()//,
-        // isRefreshing: false
+        addedCatIds: this.props.getAddedCatIds(),
+        errorClass: this.props.getErrorClass()
     };
     wp.data.subscribe(this.maybeRefresh);
   };
@@ -136,21 +144,37 @@ class SuggestedCategoryComponent extends Component {
         ( data ) => {
           console.log('response');
           console.log(data);
-          const newSuggestedCategory = data;
+          var newSuggestedCategory = data['response'];
           if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
             // prevent infinite loop while saving
+            const errorClass = data['status_code'] != 200 ?
+              data['response'] : '';
+            newSuggestedCategory = data['status_code'] != 200 ?
+              'Error' : newSuggestedCategory;
             // update rendered value
             this.setState( {
-                suggestedCategory: newSuggestedCategory
+              suggestedCategory: newSuggestedCategory,
+              errorClass: errorClass
             });
             // set in datastore
             this.props.setSuggestedCategory(newSuggestedCategory);
+            this.props.setErrorClass(errorClass);
           }
         },
         ( err ) => {
-          console.log('error');
+          console.log('unknown error');
           console.log(err);
-          return err;
+          // update rendered value
+          const errorMsg = `Unknown error. Save your progress and reload the
+            page to get new suggestions.`;
+          const errorCat = 'Error';
+          this.setState( {
+            suggestedCategory: errorCat,
+            errorClass: errorMsg
+          });
+          // set in datastore
+          this.props.setSuggestedCategory(errorCat);
+          this.props.setErrorClass(errorMsg);
         }
       );
     };
@@ -191,6 +215,15 @@ class SuggestedCategoryComponent extends Component {
           __( 'Suggested Category', 'wpat' )
         ),
         el(
+          'p',
+          {
+            key: 'wpat_suggested_category_error_msg',
+            className: this.state.errorClass ?
+              'wpat_api_error wpat_error_container' : 'wpat_error_container',
+            dangerouslySetInnerHTML: {__html: this.state.errorClass}
+          },
+        ),
+        el(
           'div',
           {
             key: 'wpat_suggested_category_actions',
@@ -200,7 +233,7 @@ class SuggestedCategoryComponent extends Component {
             el(
               CheckboxControl,
               {
-                name: 'wpat_suggested_category_checkbox',
+                className: 'wpat_suggested_category_checkbox',
                 key:  'wpat_suggested_category_checkbox',
                 label: this.state.suggestedCategory,
                 checked: isActualChecked,
@@ -241,20 +274,24 @@ class SuggestedCategoryComponent extends Component {
                         // form opened, prefill new term
                         // (value is switched later, so trigger this when false)
                         var checkExist = setInterval(function() {
+
                           console.log('checking existence');
                           var elems = document.getElementsByClassName(
                             "editor-post-taxonomies__hierarchical-terms-input"
                           )
                           if (elems.length) {
-                            // can't use the simple commented line below, see article
-                            // below for why the complicated code is needed instead
+                            // can't use the simple commented line below, see
+                            // article below for why the complicated code is
+                            // needed instead
                             // elems[0].value = suggestedTerm;
                             // https://hustle.bizongo.in/simulate-react-on-change-on-controlled-components-baa336920e04
-                            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                            var valSetter = Object.getOwnPropertyDescriptor(
                               window.HTMLInputElement.prototype, "value"
                             ).set;
-                            nativeInputValueSetter.call(elems[0], suggestedTerm);
-                            elems[0].dispatchEvent(new Event('input', { bubbles: true }));
+                            valSetter.call(elems[0], suggestedTerm);
+                            elems[0].dispatchEvent(
+                              new Event('input', { bubbles: true })
+                            );
                             clearInterval(checkExist);
                           }
                         }, 100); // check every 100ms
@@ -309,7 +346,8 @@ const SuggestedCategoryComponentHOC = compose( [
         } = select( 'core/editor' );
         const {
             getSuggestedCategory,
-            getAddedCatIds
+            getAddedCatIds,
+            getErrorClass
         } = select( wpatCategoryNamespace );
         const savedPostContent = select( "core/editor" ).getCurrentPost().content;
         const postContent = select( "core/editor" ).getEditedPostContent();
@@ -368,8 +406,6 @@ const SuggestedCategoryComponentHOC = compose( [
         return {
             isSavingPost: isSavingPost(),
             isAutosavingPost: isAutosavingPost(),
-            // triggers subscription 3 times if used instead of checking content
-            // hasChangedContent: hasChangedContent(),
             postContent: postContent,
             savedPostContent: savedPostContent,
             actualCategories: actualCategories,
@@ -377,18 +413,21 @@ const SuggestedCategoryComponentHOC = compose( [
             catIdNameMap: catIdNameMap,
             getSuggestedCategory: getSuggestedCategory,
             getAddedCatIds: getAddedCatIds,
+            getErrorClass: getErrorClass,
             newCatId: newCatId
         };
     } ),
     withDispatch( ( dispatch ) => {
         const {
             setSuggestedCategory,
-            addCatId
+            addCatId,
+            setErrorClass
         } = dispatch( wpatCategoryNamespace );
         console.log('dispatching');
         return {
             setSuggestedCategory: setSuggestedCategory,
-            addCatId: addCatId
+            addCatId: addCatId,
+            setErrorClass: setErrorClass
         };
     } )
 ])( SuggestedCategoryComponent );
@@ -401,14 +440,11 @@ registerPlugin( 'wpat-category-plugin', {
 } );
 
 /**
- * Render suggested category within HierarchicalTermSelector
+ * Render suggested category above HierarchicalTermSelector
  */
 function renderSuggestedCategoryComponent( OriginalComponent ) {
 	return function( props ) {
-    console.log('filter entered');
-    console.log(props);
 		if ( props.slug === 'category' ) {
-      console.log('category entered');
       return el(
         'div',
         {key: 'wpat_category_container_' + props.instanceId},
@@ -431,13 +467,9 @@ function renderSuggestedCategoryComponent( OriginalComponent ) {
       );
 		} else {
       return el(
-  			'div',
-  			{class_name: 'wpat_test_class'},
-        el(
-  				OriginalComponent,
-  				props
-        )
-  		);
+				OriginalComponent,
+				props
+      );
 		}
 	}
 };

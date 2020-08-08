@@ -8,9 +8,23 @@
   padding: 2px 4px 2px 2px;
   display: inline-block;
   width: 100%;
+  border-bottom: 1px solid #e2e4e7;
+  margin-bottom: 6px;
 }
 .wpat_suggested_category_actions {
   display: flex;
+}
+.wpat_api_error {
+  background-color: crimson;
+  color: white;
+  border-radius: 3px;
+  padding: 3px;
+}
+.wpat_api_error a {
+  color: white;
+}
+.wpat_error_container {
+  margin-bottom: 0px;
 }
 .wpat_suggested_category_actions .wpat_suggested_category_refresh {
   margin-left: 6px;

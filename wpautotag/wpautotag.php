@@ -1,16 +1,13 @@
 <?php
    /*
    Plugin Name: WP Auto Tag
-   Plugin URI: http://wpautotag.com
+   Plugin URI: https://wpautotag.com
    Description: Automatically tag and categorize your posts.
    Version: 0.0.1
    Author: Jared Rand
    Author URI: http://jrandblog.com
    License: GPLv3
    */
-?>
-
-<?php
 
 // $plugin_data = get_plugin_data( __FILE__ );
 $plugin_data = get_file_data(__FILE__, array('Version' => 'Version'), false);
@@ -48,6 +45,14 @@ function wpat_get_actual_categories($post_id) {
   }
   return $actual_categories;
 }
+function wpat_get_actual_tags($post_id) {
+  $raw_tag_list = get_the_tags($post->ID);
+  $actual_tags = array();
+  foreach ($raw_tag_list as $tag_obj) {
+    $actual_tags[] = $tag_obj->name;
+  }
+  return $actual_tags;
+}
 function wpat_strcase($str, $case='lower') {
   switch ($case) {
     case 'lower':
@@ -80,16 +85,25 @@ function wpat_script_enqueue_edit_post($hook) {
     );
     $category_prior = wpat_get_category_prior();
     $actual_categories = wpat_get_actual_categories($post->ID);
-    $suggested_category = wpat_get_suggested_category(
+    $post_title = get_the_title($post->ID);
+    $domain = get_home_url();
+    $post_tags = get_the_tags($post->ID);
+    $suggested_category_response = wpat_get_suggested_category(
       $post->post_content, $category_prior, $actual_categories
     );
+    $suggested_category = $suggested_category_response['status_code'] == 200 ?
+      $suggested_category_response['response'] : 'Error';
+    $error_msg = $suggested_category_response['status_code'] == 200 ?
+      '' : $suggested_category_response['response'];
+
   	wp_localize_script(
       'ajax-script-wpat-edit-post', 'ajax_object',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'category_prior' => $category_prior,
         'actual_categories' => $actual_categories,
-        'suggested_category' => $suggested_category
+        'suggested_category' => $suggested_category,
+        'error_msg' => $error_msg,
       )
     );
   }
@@ -148,7 +162,7 @@ function wpat_settings_page() {
     <ol>
       <li>
         Register on
-        <a href="http://wpautotag.com/registration/" target="_blank">
+        <a href="https://wpautotag.com/registration/" target="_blank">
           wpautotag.com</a>.
       </li>
       <li>
@@ -156,7 +170,7 @@ function wpat_settings_page() {
       </li>
       <li>
         Find your API key on your
-        <a href="http://wpautotag.com/my-account/api-key-item/" target="_blank
+        <a href="https://wpautotag.com/my-account/api-key-item/" target="_blank
         ">
           profile page</a>.
       </li>
@@ -170,6 +184,7 @@ function wpat_settings_page() {
       <input type="text" name="<?php echo $api_key_name; ?>"
         value="<?php echo $api_key_val; ?>" size="35">
 
+      <hr>
       <h3>Options</h3>
       <label for="<?php echo $capital_strategy_name; ?>">
         How would you like suggested categories to be displayed?
@@ -196,5 +211,38 @@ function wpat_settings_page() {
   </div>
   <?php
 }
+function wpat_settings_link($anchor_text, $new_tab=true) {
+  $target_str = $new_tab ?  'target="_blank"' : '';
+  return '<a href="' .
+    menu_page_url('wpautotag-settings', false) .
+    '"' . $target_str . '>' . $anchor_text . '</a>';
+}
+function wpat_add_plugin_settings_link($links) {
+  array_unshift($links, wpat_settings_link('Settings', false));
+  return $links;
+}
+$plugin = plugin_basename(__FILE__);
+add_filter("plugin_action_links_$plugin", 'wpat_add_plugin_settings_link' );
 
+/* Activation */
+register_activation_hook( __FILE__, 'wpat_admin_notice_activation_hook' );
+function wpat_admin_notice_activation_hook() {
+    set_transient( 'wpat_activation_admin_notice_transient', true, 5 );
+}
+add_action( 'admin_notices', 'wpat_admin_notice_upon_activation' );
+function wpat_admin_notice_upon_activation(){
+    /* Check transient, if available display notice */
+    if( get_transient( 'wpat_activation_admin_notice_transient' ) ){
+        ?>
+        <div class="updated notice is-dismissible">
+            <p>Thank you for using WP Auto Tag. Go to the
+              <?php echo wpat_settings_link('settings page', false); ?>
+              to get started.
+            </p>
+        </div>
+        <?php
+        /* Delete transient, only display this notice once. */
+        delete_transient( 'wpat_activation_admin_notice_transient' );
+    }
+}
 ?>

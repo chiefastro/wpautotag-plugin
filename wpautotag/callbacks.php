@@ -1,9 +1,4 @@
 <?php
-if (is_admin()) {
-  add_action('wp_ajax_wpat_refresh_suggested_category', 'wpat_refresh_suggested_category');
-  add_action('wp_ajax_wpat_assign_suggested_category', 'wpat_assign_suggested_category');
-}
-
 add_action( 'rest_api_init', 'wpat_suggested_category_api');
 function wpat_suggested_category_api(){
   register_rest_route(
