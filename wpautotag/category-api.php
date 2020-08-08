@@ -27,9 +27,8 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
     if(!function_exists('menu_page_url')) {
       require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
-    $null_api_key_msg = 'API key required, please add one on the <a href="' .
-      menu_page_url('wpautotag-settings', false) .
-      '" target="_blank">settings page</a>.';
+    $null_api_key_msg = 'API key required, please add one on the ' .
+      wpat_settings_link('settings page', true) . '.';
     return array('status_code' => 403, 'response' => $null_api_key_msg);
   }
   $header[] = 'x-api-key: ' . $wpat_api_key;
