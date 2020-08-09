@@ -1,6 +1,10 @@
 <?php
-function wpat_call_category_api($content, $category_prior, $actual_categories) {
+function wpat_call_category_api(
+  $content, $title, $actual_categories, $actual_tags
+) {
   $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/category-model';
+  $category_prior = wpat_get_category_prior();
+  $domain = get_home_url();
   // cast to int
   if ($category_prior) {
     $category_prior = array_map('intval', $category_prior);
@@ -13,7 +17,10 @@ function wpat_call_category_api($content, $category_prior, $actual_categories) {
       array(
         "text" => $content,
         "prior" => $category_prior,
-        "actual_categories" => $actual_categories
+        "actual_categories" => $actual_categories,
+        "actual_tags" => $actual_tags,
+        "domain" => $domain,
+        "title" => $title
       )
     ]
   );

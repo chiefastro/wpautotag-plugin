@@ -116,24 +116,29 @@ class SuggestedCategoryComponent extends Component {
     }
     // refresh suggested category if saving and edited post content
     // different from saved post content
+    const contentEqual = this.props.postContent != this.props.savedPostContent
+    const titleEqual = this.props.postTitle != this.props.savedPostTitle
     const catsEqual = arrEqual(
       this.props.actualCategories, this.props.savedActualCategories
     )
+    const tagsEqual = arrEqual(
+      this.props.actualTags, this.props.savedActualTags
+    )
+    const allEqual = contentEqual && titleEqual && catsEqual && tagsEqual
     if (
-        ((this.props.isSavingPost || this.props.isAutosavingPost)
-        &&
         (
-          (this.props.postContent != this.props.savedPostContent) ||
-          (!catsEqual)
-        )) || isRefreshing
+          (this.props.isSavingPost || this.props.isAutosavingPost)
+          && !allEqual
+        ) || isRefreshing
     ) {
       // Get new suggested categories from API
       console.log('saving condition met');
       console.log(this.props);
       var payload = {
         'post_content': this.props.postContent,
-        'category_prior': ajax_object.category_prior,
-        'actual_categories': this.props.actualCategories
+        'post_title': this.props.postTitle,
+        'actual_categories': this.props.actualCategories,
+        'actual_tags': this.props.actualTags
       };
       console.log(payload);
       wp.apiRequest( {
@@ -349,12 +354,22 @@ const SuggestedCategoryComponentHOC = compose( [
             getAddedCatIds,
             getErrorClass
         } = select( wpatCategoryNamespace );
-        const savedPostContent = select( "core/editor" ).getCurrentPost().content;
+        // content and title
         const postContent = select( "core/editor" ).getEditedPostContent();
-        // format array of actualCategories
+        const savedPostContent = select( "core/editor" ).getCurrentPost().content;
+        const postTitle = select( "core/editor" ).getCurrentPostAttribute( 'title' );
+        const savedPostTitle = select( "core/editor" ).getCurrentPost().title;
+        // categories
         const savedCatIds = select( 'core/editor' ).getCurrentPostAttribute( 'categories' );
         const catIds = select( 'core/editor' ).getEditedPostAttribute( 'categories' );
         const catObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'category' );
+        // tags
+        const savedTagIds = select( 'core/editor' ).getCurrentPostAttribute( 'tags' );
+        const tagIds = select( 'core/editor' ).getEditedPostAttribute( 'tags' );
+        // why does this always return null the first time it's called?
+        var tagObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'post_tag' );
+        tagObjs = select( 'core' ).getEntityRecords( 'taxonomy', 'post_tag' );
+        // ids to names for categories
         const addedCatIds = getAddedCatIds();
         var newCatId = false;
         var catIdNameMap = {};
@@ -375,6 +390,7 @@ const SuggestedCategoryComponentHOC = compose( [
             }
           });
         }
+        // format array of actualCategories
         var actualCategories = [];
         if (catIds) {
           catIds.forEach((catId, i) => {
@@ -402,14 +418,52 @@ const SuggestedCategoryComponentHOC = compose( [
             savedActualCategories.push(catIdNameMap[catId]);
           });
         };
+        // ids to names for tags
+        var tagIdNameMap = {};
+        if (tagObjs) {
+          tagObjs.forEach((tagObj, i) => {
+            if (tagObj.taxonomy === 'tag') {
+              tagIdNameMap[tagObj.id] = tagObj.name;
+            }
+          });
+        };
+        // format array of actualTags
+        var actualTags = [];
+        if (tagIds) {
+          tagIds.forEach((tagId, i) => {
+            let tagName = tagIdNameMap[tagId];
+            if (typeof tagName === 'undefined') {
+              // getEntityRecords doesn't update cache after adding term
+              tagObj = select( 'core' ).getEntityRecord(
+                'taxonomy', 'post_tag', tagId
+              );
+              if (typeof tagObj !== 'undefined') {
+                tagName = tagObj.name;
+                // add to tagIdNameMap, which is missing this term in this case
+                tagIdNameMap[tagId] = tagName;
+              }
+            }
+            actualTags.push(tagName);
+          });
+        };
+        var savedActualTags = [];
+        if (savedTagIds) {
+          savedTagIds.forEach((tagId, i) => {
+            savedActualTags.push(tagIdNameMap[tagId]);
+          });
+        };
 
         return {
             isSavingPost: isSavingPost(),
             isAutosavingPost: isAutosavingPost(),
             postContent: postContent,
             savedPostContent: savedPostContent,
+            postTitle: postTitle,
+            savedPostTitle: savedPostTitle,
             actualCategories: actualCategories,
             savedActualCategories: savedActualCategories,
+            actualTags: actualTags,
+            savedActualTags: savedActualTags,
             catIdNameMap: catIdNameMap,
             getSuggestedCategory: getSuggestedCategory,
             getAddedCatIds: getAddedCatIds,

@@ -11,20 +11,24 @@ function wpat_suggested_category_api(){
 };
 function wpat_get_suggested_category_rest( WP_REST_Request $data ) {
   $post_content = isset($data['post_content']) ? $data['post_content'] : '';
-  $category_prior = isset($data['category_prior']) ? $data['category_prior'] : array();
+  $post_title = isset($data['post_title']) ? $data['post_title'] : '';
   $actual_categories = isset($data['actual_categories']) ? $data['actual_categories'] : array();
+  $actual_tags = isset($data['actual_tags']) ? $data['actual_tags'] : array();
   $suggested_category = wpat_get_suggested_category(
     $post_content,
-    $category_prior,
-    $actual_categories
+    $post_title,
+    $actual_categories,
+    $actual_tags
   );
   return $suggested_category;
 }
 function wpat_get_suggested_category(
-  $content, $category_prior, $actual_categories
+  $content, $title, $actual_categories, $actual_tags
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'category-api.php' );
-  return wpat_call_category_api($content, $category_prior, $actual_categories);
+  return wpat_call_category_api(
+    $content, $title, $actual_categories, $actual_tags
+  );
 }
 
 ?>

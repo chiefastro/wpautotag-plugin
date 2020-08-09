@@ -30,10 +30,14 @@ function wpat_enqueue_styles() {
 
 /* Helpers for suggested category */
 function wpat_get_category_prior() {
-  $raw_category_list = get_categories(array('count' => True));
   $category_prior = array();
-  foreach ($raw_category_list as $category_obj) {
-    $category_prior[$category_obj->name] = $category_obj->count;
+  $wpat_ignore_prior = get_option('wpat_ignore_prior');
+  // get prior unless option to ignore is turned on
+  if (get_option('wpat_ignore_prior') !== "1") {
+    $raw_category_list = get_categories(array('count' => True));
+    foreach ($raw_category_list as $category_obj) {
+      $category_prior[$category_obj->name] = $category_obj->count;
+    }
   }
   return $category_prior;
 }
@@ -46,10 +50,12 @@ function wpat_get_actual_categories($post_id) {
   return $actual_categories;
 }
 function wpat_get_actual_tags($post_id) {
-  $raw_tag_list = get_the_tags($post->ID);
+  $raw_tag_list = get_the_tags($post_id);
   $actual_tags = array();
-  foreach ($raw_tag_list as $tag_obj) {
-    $actual_tags[] = $tag_obj->name;
+  if ($raw_tag_list) {
+    foreach ($raw_tag_list as $tag_obj) {
+      $actual_tags[] = $tag_obj->name;
+    }
   }
   return $actual_tags;
 }
@@ -83,13 +89,10 @@ function wpat_script_enqueue_edit_post($hook) {
       plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
       array('jquery')
     );
-    $category_prior = wpat_get_category_prior();
     $actual_categories = wpat_get_actual_categories($post->ID);
-    $post_title = get_the_title($post->ID);
-    $domain = get_home_url();
-    $post_tags = get_the_tags($post->ID);
+    $actual_tags = wpat_get_actual_tags($post->ID);
     $suggested_category_response = wpat_get_suggested_category(
-      $post->post_content, $category_prior, $actual_categories
+      $post->post_content, $post->post_title, $actual_categories, $actual_tags
     );
     $suggested_category = $suggested_category_response['status_code'] == 200 ?
       $suggested_category_response['response'] : 'Error';
@@ -100,8 +103,6 @@ function wpat_script_enqueue_edit_post($hook) {
       'ajax-script-wpat-edit-post', 'ajax_object',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
-        'category_prior' => $category_prior,
-        'actual_categories' => $actual_categories,
         'suggested_category' => $suggested_category,
         'error_msg' => $error_msg,
       )
@@ -128,10 +129,12 @@ function wpat_settings_page() {
   $api_key_name = 'wpat_api_key';
   $hidden_field_name = 'wpat_submit_hidden';
   $capital_strategy_name = 'wpat_capital_strategy';
+  $ignore_prior_name = 'wpat_ignore_prior';
 
   // Read in existing option value from database
   $api_key_val = get_option( $api_key_name );
   $capital_strategy_val = get_option( $capital_strategy_name );
+  $ignore_prior_val = get_option( $ignore_prior_name );
 
   // See if the user has posted us some information
   // If they did, this hidden field will be set to 'Y'
@@ -139,9 +142,11 @@ function wpat_settings_page() {
       // Read their posted value
       $api_key_val = $_POST[ $api_key_name ];
       $capital_strategy_val = $_POST[ $capital_strategy_name ];
+      $ignore_prior_val = isset($_POST[ $ignore_prior_name ]) ? "1" : "0";
       // Save the posted value in the database
       update_option( $api_key_name, $api_key_val );
       update_option( $capital_strategy_name, $capital_strategy_val );
+      update_option( $ignore_prior_name, $ignore_prior_val );
       // Put a "settings saved" message on the screen
       ?>
       <div class="updated"><p><strong>
@@ -186,23 +191,53 @@ function wpat_settings_page() {
 
       <hr>
       <h3>Options</h3>
-      <label for="<?php echo $capital_strategy_name; ?>">
-        How would you like suggested categories to be displayed?
-      </label>
-      <select name="<?php echo $capital_strategy_name; ?>">
-        <option value="lower"
-          <?php echo $capital_strategy_val == "lower" ? "selected" : ""; ?>
-        >lower case</option>
-        <option value="upper"
-          <?php echo $capital_strategy_val == "upper" ? "selected" : ""; ?>
-        >UPPER CASE</option>
-        <option value="title"
-          <?php echo $capital_strategy_val == "title" ? "selected" : ""; ?>
-        >Capitalize First Letter Of Each Word</option>
-        <option value="sentence"
-          <?php echo $capital_strategy_val == "sentence" ? "selected" : ""; ?>
-        >Capitalize first letter of first word</option>
-      </select>
+      <table class="form-table"><tbody>
+        <tr>
+          <th scope="row">
+            <label for="<?php echo $capital_strategy_name; ?>">
+              How would you like suggested categories to be displayed?
+            </label>
+          </th>
+          <td>
+            <select name="<?php echo $capital_strategy_name; ?>">
+              <option value="lower"
+                <?php echo $capital_strategy_val == "lower" ? "selected" : ""; ?>
+              >lower case</option>
+              <option value="upper"
+                <?php echo $capital_strategy_val == "upper" ? "selected" : ""; ?>
+              >UPPER CASE</option>
+              <option value="title"
+                <?php echo $capital_strategy_val == "title" ? "selected" : ""; ?>
+              >Capitalize First Letter Of Each Word</option>
+              <option value="sentence"
+                <?php echo $capital_strategy_val == "sentence" ? "selected" : ""; ?>
+              >Capitalize first letter of first word</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">
+            <label for="<?php echo $ignore_prior_name; ?>">
+              Get "blank slate" suggestions?
+            </label>
+          </th>
+          <td>
+            <input type="checkbox" name="<?php echo $ignore_prior_name; ?>"
+              value="1"
+              <?php echo $ignore_prior_val === "1" ? "checked" : ""; ?>
+            >
+            <p class="description">
+              "Blank slate" suggestions ignore how often you've used
+              categories in the past.
+            </p>
+            <p class="description">
+              Consider turning this on if your suggestions are always your
+              most popular category.
+            </p>
+          </td>
+        </tr>
+      </tbody></table>
+
       <p class="submit">
         <input type="submit" name="Submit" class="button-primary"
           value="<?php esc_attr_e('Save Changes') ?>" />
