@@ -26,9 +26,17 @@ function wpat_get_suggested_category(
   $content, $title, $actual_categories, $actual_tags
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'category-api.php' );
-  return wpat_call_category_api(
-    $content, $title, $actual_categories, $actual_tags
-  );
+
+  try {
+    $suggested_category = wpat_call_category_api(
+      $content, $title, $actual_categories, $actual_tags
+    );
+  } catch (\Exception | \Throwable $e) {
+    $suggested_category = array(
+      'status_code' => 500, 'response' => $e->getMessage()
+    );
+  }
+  return $suggested_category;
 }
 
 ?>
