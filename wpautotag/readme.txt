@@ -1,8 +1,12 @@
 === WP Auto Tag ===
-Contributors: jrand
-Tags: tags, categories, taxonomy, machine learning, natural language processing, automation
-Requires at least: 4.6
-Tested up to: 5.4
+Contributors: chiefastro
+Author URI: http://jrandblog.com/
+Plugin URL: https://wpautotag.com
+Tags: tags, categories, taxonomy, machine learning, natural language
+  processing, automation
+Requires at least: 5.0
+Tested up to: 5.4.2
+Requires PHP: 7.3
 Stable tag: 0.0.1
 License: GPLv3 or later
 
@@ -14,17 +18,24 @@ WP Auto Tag uses machine learning to automatically categorize and tag your posts
 
 Major features in WP Auto Tag include:
 
-* Suggests a category for your post while you are writing.
+* Suggests a category for your post within the editor.
 
-PS: You'll be prompted to get a wpautotag.com API key to use it, once activated. Keys are free and can be used on as many domains as you like.
+Note: To get suggestions, you'll need an API key from [wpautotag.com](https://wpautotag.com).
+Keys are free and can be used on as many domains as you like.
+
+Contributions are welcome. This plugin's code is hosted in this [github repo](https://github.com/chiefastro/wpautotag-plugin). The code for the machine learning model is also open source and hosted in this other [github repo](https://github.com/chiefastro/wpautotag-models).
 
 == Installation ==
 
-Upload the WP Auto Tag plugin to your blog, activate it, and then enter your wpautotag.com API key.
+Upload the WP Auto Tag plugin to your blog, activate it, and then enter your [wpautotag.com](https://wpautotag.com) API key.
+
+== Screenshots ==
+
+1. Category suggestions within post editor
+2. Admin screen
 
 == Changelog ==
 
 = 0.0.1 =
-*Release Date - 10 July 2020*
-
 * Initial release
+*Release Date - 9 August 2020*
