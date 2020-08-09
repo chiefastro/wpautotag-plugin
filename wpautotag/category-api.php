@@ -1,6 +1,6 @@
 <?php
 function wpat_call_category_api(
-  $content, $title, $actual_categories, $actual_tags
+  $content, $title, $actual_categories, $actual_tags, $post_id
 ) {
   $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/category-model';
   $category_prior = wpat_get_category_prior();
@@ -20,7 +20,8 @@ function wpat_call_category_api(
         "actual_categories" => $actual_categories,
         "actual_tags" => $actual_tags,
         "domain" => $domain,
-        "title" => $title
+        "title" => $title,
+        "post_id" => $post_id
       )
     ]
   );

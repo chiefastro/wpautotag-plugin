@@ -92,7 +92,8 @@ function wpat_script_enqueue_edit_post($hook) {
     $actual_categories = wpat_get_actual_categories($post->ID);
     $actual_tags = wpat_get_actual_tags($post->ID);
     $suggested_category_response = wpat_get_suggested_category(
-      $post->post_content, $post->post_title, $actual_categories, $actual_tags
+      $post->post_content, $post->post_title,
+      $actual_categories, $actual_tags, $post->ID
     );
     $suggested_category = $suggested_category_response['status_code'] == 200 ?
       $suggested_category_response['response'] : 'Error';

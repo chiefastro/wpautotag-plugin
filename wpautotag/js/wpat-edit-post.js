@@ -150,7 +150,8 @@ class SuggestedCategoryComponent extends Component {
         'post_content': this.props.postContent,
         'post_title': this.props.postTitle,
         'actual_categories': this.props.actualCategories,
-        'actual_tags': this.props.actualTags
+        'actual_tags': this.props.actualTags,
+        'post_id': this.props.postId
       };
       // set isFetching to prevent multiple concurrent fetches
       // (always happens while saving)
@@ -362,6 +363,7 @@ const SuggestedCategoryComponentHOC = compose( [
         const savedPostContent = select( "core/editor" ).getCurrentPost().content;
         const postTitle = select( "core/editor" ).getCurrentPostAttribute( 'title' );
         const savedPostTitle = select( "core/editor" ).getCurrentPost().title;
+        const postId = select( "core/editor" ).getCurrentPost().id;
         // categories
         const savedCatIds = select( 'core/editor' ).getCurrentPostAttribute( 'categories' );
         const catIds = select( 'core/editor' ).getEditedPostAttribute( 'categories' );
@@ -471,7 +473,8 @@ const SuggestedCategoryComponentHOC = compose( [
             getAddedCatIds: getAddedCatIds,
             getErrorClass: getErrorClass,
             getIsFetching: getIsFetching,
-            newCatId: newCatId
+            newCatId: newCatId,
+            postId: postId
         };
     } ),
     withDispatch( ( dispatch ) => {

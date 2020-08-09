@@ -14,22 +14,24 @@ function wpat_get_suggested_category_rest( WP_REST_Request $data ) {
   $post_title = isset($data['post_title']) ? $data['post_title'] : '';
   $actual_categories = isset($data['actual_categories']) ? $data['actual_categories'] : array();
   $actual_tags = isset($data['actual_tags']) ? $data['actual_tags'] : array();
+  $post_id = isset($data['post_id']) ? $data['post_id'] : '';
   $suggested_category = wpat_get_suggested_category(
     $post_content,
     $post_title,
     $actual_categories,
-    $actual_tags
+    $actual_tags,
+    $post_id
   );
   return $suggested_category;
 }
 function wpat_get_suggested_category(
-  $content, $title, $actual_categories, $actual_tags
+  $content, $title, $actual_categories, $actual_tags, $post_id
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'category-api.php' );
 
   try {
     $suggested_category = wpat_call_category_api(
-      $content, $title, $actual_categories, $actual_tags
+      $content, $title, $actual_categories, $actual_tags, $post_id
     );
   } catch (\Exception | \Throwable $e) {
     $suggested_category = array(
