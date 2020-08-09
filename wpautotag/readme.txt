@@ -1,4 +1,4 @@
-=== Auto Tag for Wordpress ===
+=== Auto Tag ===
 Contributors: chiefastro
 Author URI: http://jrandblog.com/
 Plugin URL: https://wpautotag.com
@@ -14,9 +14,9 @@ Automatically tag and categorize your posts.
 
 == Description ==
 
-Auto Tag for Wordpress uses machine learning to automatically categorize and tag your posts.
+Auto Tag uses machine learning to automatically categorize and tag your posts.
 
-Major features in Auto Tag for Wordpress include:
+Major features in Auto Tag include:
 
 * Suggests a category for your post within the editor.
 
@@ -27,7 +27,7 @@ Contributions are welcome. This plugin's code is hosted in this [github repo](ht
 
 == Installation ==
 
-Upload the Auto Tag for Wordpress plugin to your blog, activate it, and then enter your [wpautotag.com](https://wpautotag.com) API key.
+Upload the Auto Tag plugin to your blog, activate it, and then enter your [wpautotag.com](https://wpautotag.com) API key.
 
 == Screenshots ==
 

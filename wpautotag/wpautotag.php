@@ -1,6 +1,6 @@
 <?php
    /*
-   Plugin Name: Auto Tag for Wordpress
+   Plugin Name: Auto Tag
    Plugin URI: https://wpautotag.com
    Description: Automatically tag and categorize your posts.
    Version: 0.0.1
@@ -115,7 +115,7 @@ function wpat_script_enqueue_edit_post($hook) {
 add_action('admin_menu', 'wpat_add_settings_page');
 function wpat_add_settings_page() {
   add_options_page(
-    'Auto Tag for Wordpress Settings', 'Auto Tag',
+    'Auto Tag Settings', 'Auto Tag',
     'manage_options', 'wpautotag-settings', 'wpat_settings_page'
   );
 }
@@ -159,7 +159,7 @@ function wpat_settings_page() {
   // Now display the settings editing screen
   ?>
   <div class="wrap">
-    <h2>Auto Tag for Wordpress Settings</h2>
+    <h2>Auto Tag Settings</h2>
     <h3>Initial Setup</h3>
     <p>
       To receive category suggestions from this plugin, follow the steps below
@@ -271,7 +271,7 @@ function wpat_admin_notice_upon_activation(){
     if( get_transient( 'wpat_activation_admin_notice_transient' ) ){
         ?>
         <div class="updated notice is-dismissible">
-            <p>Thank you for using Auto Tag for Wordpress. Go to the
+            <p>Thank you for using Auto Tag. Go to the
               <?php echo wpat_settings_link('settings page', false); ?>
               to get started.
             </p>
