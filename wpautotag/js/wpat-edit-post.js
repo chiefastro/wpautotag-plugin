@@ -16,7 +16,8 @@ const withDispatch = wp.data.withDispatch;
 const initial_state = {
     'suggestedCategory': ajax_object.suggested_category,
     'addedCatIds': [],
-    'errorClass': ajax_object.error_msg
+    'errorClass': ajax_object.error_msg,
+    'isFetching': false
 };
 function reducer( state = initial_state, action ) {
   if ( action.type === 'SET_SUGGESTED_CATEGORY' ) {
@@ -33,6 +34,11 @@ function reducer( state = initial_state, action ) {
       ...state,
       errorClass: action.errorClass
     };
+  } else if (action.type === 'SET_IS_FETCHING') {
+    return {
+      ...state,
+      isFetching: action.isFetching
+    };
   }
   return state;
 };
@@ -46,6 +52,9 @@ const selectors = {
   },
   getErrorClass( state ) {
     return state.errorClass;
+  },
+  getIsFetching( state ) {
+    return state.isFetching;
   }
 
 };
@@ -67,6 +76,12 @@ const actions = {
     return {
       type: 'SET_ERROR_CLASS',
       errorClass: errorClass
+    };
+  },
+  setIsFetching( isFetching ) {
+    return {
+      type: 'SET_IS_FETCHING',
+      isFetching: isFetching
     };
   }
 
@@ -101,12 +116,14 @@ class SuggestedCategoryComponent extends Component {
     this.state = {
         suggestedCategory: this.props.getSuggestedCategory(),
         addedCatIds: this.props.getAddedCatIds(),
-        errorClass: this.props.getErrorClass()
+        errorClass: this.props.getErrorClass(),
+        isFetching: this.props.getIsFetching()
     };
+    console.log('state initialized');
     wp.data.subscribe(this.maybeRefresh);
   };
   maybeRefresh(isRefreshing=false) {
-    console.log('subscription trigger', isRefreshing);
+    // console.log('subscription trigger', isRefreshing);
     if (
       (this.props.newCatId) &&
       !(this.props.getAddedCatIds().includes(this.props.newCatId))
@@ -125,10 +142,11 @@ class SuggestedCategoryComponent extends Component {
       this.props.actualTags, this.props.savedActualTags
     )
     const allEqual = contentEqual && titleEqual && catsEqual && tagsEqual
+    console.log("this.state.isFetching", this.state.isFetching);
     if (
         (
           (this.props.isSavingPost || this.props.isAutosavingPost)
-          && !allEqual
+          && !allEqual && !this.state.isFetching
         ) || isRefreshing
     ) {
       // Get new suggested categories from API
@@ -141,6 +159,10 @@ class SuggestedCategoryComponent extends Component {
         'actual_tags': this.props.actualTags
       };
       console.log(payload);
+      // set isFetching to prevent multiple concurrent fetches
+      // (always happens while saving)
+      this.setState( { isFetching: true });
+      this.props.setIsFetching(true);
       wp.apiRequest( {
         path: 'wpautotag/v1/category/suggest',
         method: 'POST',
@@ -159,11 +181,15 @@ class SuggestedCategoryComponent extends Component {
             // update rendered value
             this.setState( {
               suggestedCategory: newSuggestedCategory,
-              errorClass: errorClass
+              errorClass: errorClass,
+              isFetching: false
             });
             // set in datastore
             this.props.setSuggestedCategory(newSuggestedCategory);
             this.props.setErrorClass(errorClass);
+            this.props.setIsFetching(false);
+            // console.log("just set isFetching to false");
+            // console.log(this.props.getIsFetching());
           }
         },
         ( err ) => {
@@ -175,11 +201,13 @@ class SuggestedCategoryComponent extends Component {
           const errorCat = 'Error';
           this.setState( {
             suggestedCategory: errorCat,
-            errorClass: errorMsg
+            errorClass: errorMsg,
+            isFetching: false
           });
           // set in datastore
           this.props.setSuggestedCategory(errorCat);
           this.props.setErrorClass(errorMsg);
+          this.props.setIsFetching(false);
         }
       );
     };
@@ -352,7 +380,8 @@ const SuggestedCategoryComponentHOC = compose( [
         const {
             getSuggestedCategory,
             getAddedCatIds,
-            getErrorClass
+            getErrorClass,
+            getIsFetching
         } = select( wpatCategoryNamespace );
         // content and title
         const postContent = select( "core/editor" ).getEditedPostContent();
@@ -468,6 +497,7 @@ const SuggestedCategoryComponentHOC = compose( [
             getSuggestedCategory: getSuggestedCategory,
             getAddedCatIds: getAddedCatIds,
             getErrorClass: getErrorClass,
+            getIsFetching: getIsFetching,
             newCatId: newCatId
         };
     } ),
@@ -475,13 +505,15 @@ const SuggestedCategoryComponentHOC = compose( [
         const {
             setSuggestedCategory,
             addCatId,
-            setErrorClass
+            setErrorClass,
+            setIsFetching
         } = dispatch( wpatCategoryNamespace );
         console.log('dispatching');
         return {
             setSuggestedCategory: setSuggestedCategory,
             addCatId: addCatId,
-            setErrorClass: setErrorClass
+            setErrorClass: setErrorClass,
+            setIsFetching: setIsFetching
         };
     } )
 ])( SuggestedCategoryComponent );
