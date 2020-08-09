@@ -119,16 +119,13 @@ class SuggestedCategoryComponent extends Component {
         errorClass: this.props.getErrorClass(),
         isFetching: this.props.getIsFetching()
     };
-    console.log('state initialized');
     wp.data.subscribe(this.maybeRefresh);
   };
   maybeRefresh(isRefreshing=false) {
-    // console.log('subscription trigger', isRefreshing);
     if (
       (this.props.newCatId) &&
       !(this.props.getAddedCatIds().includes(this.props.newCatId))
     ) {
-      console.log('adding cat id to store');
       this.props.addCatId(this.props.newCatId);
     }
     // refresh suggested category if saving and edited post content
@@ -142,7 +139,6 @@ class SuggestedCategoryComponent extends Component {
       this.props.actualTags, this.props.savedActualTags
     )
     const allEqual = contentEqual && titleEqual && catsEqual && tagsEqual
-    console.log("this.state.isFetching", this.state.isFetching);
     if (
         (
           (this.props.isSavingPost || this.props.isAutosavingPost)
@@ -150,15 +146,12 @@ class SuggestedCategoryComponent extends Component {
         ) || isRefreshing
     ) {
       // Get new suggested categories from API
-      console.log('saving condition met');
-      console.log(this.props);
       var payload = {
         'post_content': this.props.postContent,
         'post_title': this.props.postTitle,
         'actual_categories': this.props.actualCategories,
         'actual_tags': this.props.actualTags
       };
-      console.log(payload);
       // set isFetching to prevent multiple concurrent fetches
       // (always happens while saving)
       this.setState( { isFetching: true });
@@ -169,8 +162,6 @@ class SuggestedCategoryComponent extends Component {
         data: payload
       } ).then(
         ( data ) => {
-          console.log('response');
-          console.log(data);
           var newSuggestedCategory = data['response'];
           if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
             // prevent infinite loop while saving
@@ -188,13 +179,9 @@ class SuggestedCategoryComponent extends Component {
             this.props.setSuggestedCategory(newSuggestedCategory);
             this.props.setErrorClass(errorClass);
             this.props.setIsFetching(false);
-            // console.log("just set isFetching to false");
-            // console.log(this.props.getIsFetching());
           }
         },
         ( err ) => {
-          console.log('unknown error');
-          console.log(err);
           // update rendered value
           const errorMsg = `Unknown error. Save your progress and reload the
             page to get new suggestions.`;
@@ -271,9 +258,6 @@ class SuggestedCategoryComponent extends Component {
                 label: this.state.suggestedCategory,
                 checked: isActualChecked,
                 onChange: (updateChecked) => {
-                  console.log(this.props);
-
-                  console.log(this.props.hierarchicalTermSelector);
                   var newSelectedTerms = JSON.parse(
                     JSON.stringify(this.props.hierarchicalTermSelector.terms)
                   );
@@ -282,10 +266,7 @@ class SuggestedCategoryComponent extends Component {
                       !catId ? this.state.suggestedCategory : ''
                     )
                   );
-                  console.log(newSelectedTerms);
                   const termIdx = newSelectedTerms.indexOf(catId);
-                  console.log(termIdx)
-                  console.log(catId)
 
                   if ((termIdx > -1) && !updateChecked) {
                     // term selected and user wants to unassign
@@ -296,19 +277,14 @@ class SuggestedCategoryComponent extends Component {
                   } else if (!catId && updateChecked) {
                     // term doesn't exist and user wants to assign
                     // trigger add new term
-                    console.log('add new term');
                     let addTermButton = document.getElementsByClassName(
                       "editor-post-taxonomies__hierarchical-terms-add"
                     )[0]
                     addTermButton.onclick = function prefillNewTerm() {
-                      console.log(this);
-                      console.log(this.getAttribute('aria-expanded'));
                       if (this.getAttribute('aria-expanded') == 'false') {
                         // form opened, prefill new term
                         // (value is switched later, so trigger this when false)
                         var checkExist = setInterval(function() {
-
-                          console.log('checking existence');
                           var elems = document.getElementsByClassName(
                             "editor-post-taxonomies__hierarchical-terms-input"
                           )
@@ -332,7 +308,6 @@ class SuggestedCategoryComponent extends Component {
                     }
                     addTermButton.click();
                   }
-                  console.log(newSelectedTerms);
                   // set state of suggested category checkbox
                   this.setState( {
                     checked: updateChecked
@@ -356,7 +331,6 @@ class SuggestedCategoryComponent extends Component {
                 className: 'wpat_suggested_category_refresh',
                 iconSize: 16,
                 onClick: () => {
-                  console.log('refresh clicked');
                   this.maybeRefresh(true);
                 }
               }
@@ -434,7 +408,6 @@ const SuggestedCategoryComponentHOC = compose( [
                 // add to catIdNameMap, which is missing this term in this case
                 catIdNameMap[catId] = catName;
                 // save to store so cat can be unassigned
-                console.log('new cat detected');
                 newCatId = catId;
               }
             }
@@ -508,7 +481,6 @@ const SuggestedCategoryComponentHOC = compose( [
             setErrorClass,
             setIsFetching
         } = dispatch( wpatCategoryNamespace );
-        console.log('dispatching');
         return {
             setSuggestedCategory: setSuggestedCategory,
             addCatId: addCatId,
