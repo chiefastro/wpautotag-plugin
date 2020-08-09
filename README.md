@@ -1,2 +1,2 @@
 # wpautotag
-Code for the WP Auto Tag Wordpress Plugin
+Code for the Auto Tag for Wordpress Plugin
