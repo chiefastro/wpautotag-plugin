@@ -146,7 +146,7 @@ class SuggestedCategoryComponent extends Component {
         ) || isRefreshing
     ) {
       // Get new suggested categories from API
-      var payload = {
+      const payload = {
         'post_content': this.props.postContent,
         'post_title': this.props.postTitle,
         'actual_categories': this.props.actualCategories,
@@ -163,13 +163,10 @@ class SuggestedCategoryComponent extends Component {
         data: payload
       } ).then(
         ( data ) => {
-          var newSuggestedCategory = data['response'];
+          const newSuggestedCategory = data['response'];
+          const errorClass = data['error_msg'];
           if (this.props.getSuggestedCategory() !== newSuggestedCategory) {
             // prevent infinite loop while saving
-            const errorClass = data['status_code'] != 200 ?
-              data['response'] : '';
-            newSuggestedCategory = data['status_code'] != 200 ?
-              'Error' : newSuggestedCategory;
             // update rendered value
             this.setState( {
               suggestedCategory: newSuggestedCategory,
