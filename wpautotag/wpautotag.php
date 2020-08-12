@@ -162,9 +162,9 @@ function wpat_settings_page() {
   // If they did, this hidden field will be set to 'Y'
   if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
       // Read their posted value
-      $api_key_val = sanitize_option( $api_key_name, $_POST[ $api_key_name ] );
+      $api_key_val = sanitize_option( 'wpat_api_key', $_POST[ $api_key_name ] );
       $capital_strategy_val = sanitize_option(
-        $capital_strategy_name,
+        'wpat_capital_strategy',
         $_POST[ $capital_strategy_name ]
       );
       $ignore_prior_val = isset($_POST[ $ignore_prior_name ]) ? "1" : "0";
