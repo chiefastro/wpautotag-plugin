@@ -39,6 +39,13 @@ function wpat_get_category_prior() {
       $category_prior[$category_obj->name] = $category_obj->count;
     }
   }
+  // clean
+  if ($category_prior) {
+    $category_prior = array_map('intval', $category_prior);
+  } else {
+    // if empty, cast to stdClass so empty dict will be passed to API
+    $category_prior = new stdClass();
+  }
   return $category_prior;
 }
 function wpat_get_actual_categories($post_id) {
@@ -91,21 +98,17 @@ function wpat_script_enqueue_edit_post($hook) {
     );
     $actual_categories = wpat_get_actual_categories($post->ID);
     $actual_tags = wpat_get_actual_tags($post->ID);
-    $suggested_category_response = wpat_get_suggested_category(
+    $suggested_category = wpat_get_suggested_category(
       $post->post_content, $post->post_title,
       $actual_categories, $actual_tags, $post->ID
     );
-    $suggested_category = $suggested_category_response['status_code'] == 200 ?
-      $suggested_category_response['response'] : 'Error';
-    $error_msg = $suggested_category_response['status_code'] == 200 ?
-      '' : $suggested_category_response['response'];
 
   	wp_localize_script(
       'ajax-script-wpat-edit-post', 'ajax_object',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
-        'suggested_category' => $suggested_category,
-        'error_msg' => $error_msg,
+        'suggested_category' => $suggested_category['response'],
+        'error_msg' => $suggested_category['error_msg'],
       )
     );
   }
@@ -119,6 +122,24 @@ function wpat_add_settings_page() {
     'manage_options', 'wpautotag-settings', 'wpat_settings_page'
   );
 }
+function sanitize_option_wpat_capital_strategy_callback( $capital_strategy_val ) {
+  $supported_vals = array("lower", "upper", "title", "sentence");
+  if (!in_array($capital_strategy_val, $supported_vals)) {
+      $capital_strategy_val = "";
+  }
+  return $capital_strategy_val;
+}
+add_filter(
+  'sanitize_option_wpat_capital_strategy',
+  'sanitize_option_wpat_capital_strategy_callback'
+);
+function sanitize_option_wpat_api_key_callback( $api_key_val ) {
+  return sanitize_text_field($api_key_val);
+}
+add_filter(
+  'sanitize_option_wpat_api_key',
+  'sanitize_option_wpat_api_key_callback'
+);
 function wpat_settings_page() {
   //must check that the user has the required capability
   if (!current_user_can('manage_options'))
@@ -141,8 +162,11 @@ function wpat_settings_page() {
   // If they did, this hidden field will be set to 'Y'
   if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
       // Read their posted value
-      $api_key_val = $_POST[ $api_key_name ];
-      $capital_strategy_val = $_POST[ $capital_strategy_name ];
+      $api_key_val = sanitize_option( 'wpat_api_key', $_POST[ $api_key_name ] );
+      $capital_strategy_val = sanitize_option(
+        'wpat_capital_strategy',
+        $_POST[ $capital_strategy_name ]
+      );
       $ignore_prior_val = isset($_POST[ $ignore_prior_name ]) ? "1" : "0";
       // Save the posted value in the database
       update_option( $api_key_name, $api_key_val );
@@ -188,7 +212,7 @@ function wpat_settings_page() {
       <input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
       <label for="<?php echo $api_key_name; ?>">API Key</label>
       <input type="text" name="<?php echo $api_key_name; ?>"
-        value="<?php echo $api_key_val; ?>" size="35">
+        value="<?php echo esc_attr($api_key_val); ?>" size="35">
 
       <hr>
       <h3>Options</h3>
@@ -248,6 +272,9 @@ function wpat_settings_page() {
   <?php
 }
 function wpat_settings_link($anchor_text, $new_tab=true) {
+  if(!function_exists('menu_page_url')) {
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+  }
   $target_str = $new_tab ?  'target="_blank"' : '';
   return '<a href="' .
     menu_page_url('wpautotag-settings', false) .

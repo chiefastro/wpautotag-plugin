@@ -5,22 +5,65 @@ function wpat_suggested_category_api(){
     'wpautotag/v1',
     '/category/suggest/',
     array(
-      'methods' => 'POST',
-      'callback' => 'wpat_get_suggested_category_rest'
+      'methods' => WP_REST_Server::EDITABLE,//'POST', //
+      'callback' => 'wpat_get_suggested_category_rest',
+      'args' => array(
+        'post_content' => array(
+          'default' => '',
+          'required' => true,
+          'sanitize_callback' => function($param, $request, $key) {
+            return wp_kses_post( $param );
+          },
+        ),
+        'post_title' => array(
+          'default' => '',
+          'required' => true,
+          'sanitize_callback' => function($param, $request, $key) {
+            return sanitize_title( $param );
+          },
+        ),
+        'actual_categories' => array(
+          'default' => array(),
+          'required' => true,
+          'validate_callback' => function($param, $request, $key) {
+            return is_array( $param );
+          },
+          'sanitize_callback' => function($param, $request, $key) {
+            $cleaned = array();
+            foreach ($param as $val) {
+              $cleaned[] = sanitize_text_field( $val );
+            }
+            return $cleaned;
+          },
+        ),
+        'actual_tags' => array(
+          'default' => array(),
+          'required' => true,
+          'validate_callback' => function($param, $request, $key) {
+            return is_array( $param );
+          },
+          'sanitize_callback' => function($param, $request, $key) {
+            $cleaned = array();
+            foreach ($param as $val) {
+              $cleaned[] = sanitize_text_field( $val );
+            }
+            return $cleaned;
+          },
+        ),
+        'post_id' => array(
+          'default' => '',
+          'required' => false,
+          'validate_callback' => function($param, $request, $key) {
+            return is_numeric( $param );
+          },
+        ),
+      ),
     ));
 };
 function wpat_get_suggested_category_rest( WP_REST_Request $data ) {
-  $post_content = isset($data['post_content']) ? $data['post_content'] : '';
-  $post_title = isset($data['post_title']) ? $data['post_title'] : '';
-  $actual_categories = isset($data['actual_categories']) ? $data['actual_categories'] : array();
-  $actual_tags = isset($data['actual_tags']) ? $data['actual_tags'] : array();
-  $post_id = isset($data['post_id']) ? $data['post_id'] : '';
   $suggested_category = wpat_get_suggested_category(
-    $post_content,
-    $post_title,
-    $actual_categories,
-    $actual_tags,
-    $post_id
+    $data['post_content'], $data['post_title'], $data['actual_categories'],
+    $data['actual_tags'], $data['post_id']
   );
   return $suggested_category;
 }

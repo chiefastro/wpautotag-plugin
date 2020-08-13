@@ -22,6 +22,8 @@ Major features in Automatic Tags include:
 
 Note: To get suggestions, you'll need an API key from [wpautotag.com](https://wpautotag.com).
 Keys are free and can be used on as many domains as you like.
+While editing posts, this plugin will send basic information about your post to the wpautotag.com API. The following information about your post is sent: post content, title, categories, tags, domain name, and (optionally) counts of how many posts you've published in each category. You can decline to send category counts by turning on the "blank slate" option on the settings page.
+Registering for an API key requires agreeing to the [privacy policy](https://wpautotag.com/privacy-policy/) and [terms of use](https://wpautotag.com/terms-of-use/) of wpautotag.com.
 
 Contributions are welcome. This plugin's code is hosted in this [github repo](https://github.com/chiefastro/wpautotag-plugin). The code for the machine learning model is also open source and hosted in this other [github repo](https://github.com/chiefastro/wpautotag-models).
 
