@@ -91,9 +91,14 @@ add_action( 'admin_enqueue_scripts', 'wpat_script_enqueue_edit_post' );
 function wpat_script_enqueue_edit_post($hook) {
   global $post;
   if ( $hook == 'post-new.php' || $hook == 'post.php' ) {
-  	wp_enqueue_script(
-      'ajax-script-wpat-edit-post',
-      plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
+    wp_enqueue_script(
+      'ajax-script-wpat-cats',
+      plugins_url( '/js/wpat-cats.js', __FILE__ ),
+      array('jquery')
+    );
+    wp_enqueue_script(
+      'ajax-script-wpat-tags',
+      plugins_url( '/js/wpat-tags.js', __FILE__ ),
       array('jquery')
     );
     $actual_categories = wpat_get_actual_categories($post->ID);
@@ -102,17 +107,53 @@ function wpat_script_enqueue_edit_post($hook) {
       $post->post_content, $post->post_title,
       $actual_categories, $actual_tags, $post->ID
     );
+    $suggested_tags = wpat_get_suggested_tags(
+      $post->post_content, $post->post_title,
+      $actual_categories, $actual_tags, $post->ID
+    );
 
   	wp_localize_script(
-      'ajax-script-wpat-edit-post', 'ajax_object',
+      'ajax-script-wpat-cats', 'ajax_object',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'suggested_category' => $suggested_category['response'],
         'error_msg' => $suggested_category['error_msg'],
       )
     );
+    $display_vars = array(
+      'show_txt'    => __( 'Click to display tags', 'wpat' ),
+      'hide_txt'    => __( 'Click tags to add them to this post', 'wpat' ),
+      'state'       => 'show',
+      'search_icon' => WPAUTOTAG__PLUGIN_DIR . '/assets/indicator.gif',
+      'search_box'  => '<input type="text" class="click-tag-search-box" placeholder="'.__(
+        'Start typing to search', 'wpat').'" size="26" autocomplete="off">',
+    )
+    wp_localize_script(
+      'ajax-script-wpat-tags', 'ajax_object',
+      array(
+        'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'suggested_tags' => $suggested_tags['response'],
+        'display_vars' => $display_vars,
+        'error_msg' => $suggested_tags['error_msg'],
+      )
+    );
   }
 }
+
+/* Metabox for tag suggestions */
+add_action( 'admin_menu', 'wpat_add_tag_suggestion_metabox');
+function wpat_add_tag_suggestion_metabox() {
+  add_meta_box( 'wpat_suggested_tags', 'Suggested tags',
+  'wpat_tag_suggestion_metabox', 'post', 'advanced', 'core' );
+}
+function wpat_tag_suggestion_metabox() {
+  ?>
+  <span class="container_clicktags">
+  <div class="clear"></div>
+  </span>
+  <?php
+}
+
 
 /* Admin page */
 add_action('admin_menu', 'wpat_add_settings_page');
