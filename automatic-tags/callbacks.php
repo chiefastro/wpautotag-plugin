@@ -144,27 +144,36 @@ function wpat_suggested_tags_api(){
             return is_numeric( $param );
           },
         ),
+        'tag_suggestion_type' => array(
+          'default' => 'match',
+          'required' => false,
+          'validate_callback' => function($param, $request, $key) {
+            return in_array($param, array('match', 'similar', 'keyword', 'topic'));
+          },
+        ),
       ),
     ));
 };
 function wpat_get_suggested_tags_rest( WP_REST_Request $data ) {
   $suggested_tags = wpat_get_suggested_tags(
     $data['post_content'], $data['post_title'], $data['actual_categories'],
-    $data['actual_tags'], $data['post_id']
+    $data['actual_tags'], $data['post_id'], $data['tag_suggestion_type']
   );
   return $suggested_tags;
 }
 function wpat_get_suggested_tags(
-  $content, $title, $actual_categories, $actual_tags, $post_id
+  $content, $title, $actual_categories, $actual_tags, $post_id,
+  $tag_suggestion_type
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'tag-api.php' );
 
   try {
     $suggested_tags = wpat_call_tags_api(
-      $content, $title, $actual_categories, $actual_tags, $post_id
+      $content, $title, $actual_categories, $actual_tags, $post_id,
+      $tag_suggestion_type
     );
   } catch (\Exception | \Throwable $e) {
-    $suggested_tag = array(
+    $suggested_tags = array(
       'status_code' => 500, 'response' => $e->getMessage()
     );
   }
@@ -186,8 +195,20 @@ function wpat_maybe_create_tag( $tag_name = '' ) {
   } else {
     $term_id = (int) $result_term['term_id'];
   }
+  return $term_id;
+}
+function wpat_maybe_create_tag_callback() {
+  $tag_name = $_REQUEST['tag_name'];
+  $term_id = wpat_maybe_create_tag($tag_name);
+  wp_send_json_success( [
+    'term_id' => $term_id,
+    'tag_name' => $tag_name
+  ] );
+}
 
-  wp_send_json_success( [ 'term_id' => $term_id ] );
+if ( is_admin() ) {
+	add_action( 'wp_ajax_nopriv_wpat_maybe_create_tag', 'wpat_maybe_create_tag_callback' );
+	add_action( 'wp_ajax_wpat_maybe_create_tag', 'wpat_maybe_create_tag_callback' );
 }
 
 ?>

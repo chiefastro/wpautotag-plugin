@@ -109,11 +109,11 @@ function wpat_script_enqueue_edit_post($hook) {
     );
     $suggested_tags = wpat_get_suggested_tags(
       $post->post_content, $post->post_title,
-      $actual_categories, $actual_tags, $post->ID
+      $actual_categories, $actual_tags, $post->ID, 'match'
     );
 
   	wp_localize_script(
-      'ajax-script-wpat-cats', 'ajax_object',
+      'ajax-script-wpat-cats', 'wpat_ajax_object_cats',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'suggested_category' => $suggested_category['response'],
@@ -124,12 +124,12 @@ function wpat_script_enqueue_edit_post($hook) {
       'show_txt'    => __( 'Click to display tags', 'wpat' ),
       'hide_txt'    => __( 'Click tags to add them to this post', 'wpat' ),
       'state'       => 'show',
-      'search_icon' => WPAUTOTAG__PLUGIN_DIR . '/assets/indicator.gif',
+      'search_icon' => WPAUTOTAG__PLUGIN_URL . '/assets/indicator.gif',
       'search_box'  => '<input type="text" class="click-tag-search-box" placeholder="'.__(
         'Start typing to search', 'wpat').'" size="26" autocomplete="off">',
-    )
+    );
     wp_localize_script(
-      'ajax-script-wpat-tags', 'ajax_object',
+      'ajax-script-wpat-tags', 'wpat_ajax_object_tags',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'suggested_tags' => $suggested_tags['response'],
@@ -143,16 +143,28 @@ function wpat_script_enqueue_edit_post($hook) {
 /* Metabox for tag suggestions */
 add_action( 'admin_menu', 'wpat_add_tag_suggestion_metabox');
 function wpat_add_tag_suggestion_metabox() {
-  add_meta_box( 'wpat_suggested_tags', 'Suggested tags',
+  add_meta_box( 'wpat_suggested_tags', wpat_get_tag_suggestion_header(),
   'wpat_tag_suggestion_metabox', 'post', 'advanced', 'core' );
 }
 function wpat_tag_suggestion_metabox() {
   ?>
   <span class="container_clicktags">
+    <h2>WPAT Tags</h2>
   <div class="clear"></div>
   </span>
   <?php
 }
+function wpat_get_tag_suggestion_header() {
+  $html = '<img style="display:none;" id="st_ajax_loading" src="' . WPAUTOTAG__PLUGIN_URL . '/assets/images/ajax-loader.gif" alt="' . __( 'Ajax loading', 'wpat' ) . '" />';
+  $html .= __( 'Get tag suggestions:', 'wpat' ) . '';
+  $html .= '&nbsp; - &nbsp;<a data-ajaxaction="match" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Matches', 'wpat' ) . '</a>';
+  $html .= '&nbsp; - &nbsp;<a data-ajaxaction="similar" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Similar', 'wpat' ) . '</a>';
+  $html .= '&nbsp; - &nbsp;<a data-ajaxaction="keyword" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Keywords', 'wpat' ) . '</a>';
+  $html .= '&nbsp; - &nbsp;<a data-ajaxaction="topic" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Topics', 'wpat' ) . '</a>';
+
+  return $html;
+}
+
 
 
 /* Admin page */
