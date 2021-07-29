@@ -59,9 +59,9 @@ function wpat_call_tags_api(
   $response = wp_remote_post( $endpoint_url, $options );
   $raw_body = wp_remote_retrieve_body( $response );
   $body_decode = json_decode($raw_body);
-  error_log(print_r($response, true));
-  error_log(print_r($raw_body, true));
-  error_log(print_r($body_decode, true));
+  // error_log(print_r($response, true));
+  // error_log(print_r($raw_body, true));
+  // error_log(print_r($body_decode, true));
   $status_code = wp_remote_retrieve_response_code( $response );
 
   // handle different status codes
@@ -74,8 +74,8 @@ function wpat_call_tags_api(
     // );
   } else {
     // mock
-    $result = array('tag abc', 'xyz tag', 'and 123 tag');
-    // $result = 'Error';
+    // $result = array('tag abc', 'xyz tag', 'and 123 tag');
+    $result = 'Error';
   }
 
   if ($status_code == 200) {
@@ -102,4 +102,41 @@ function wpat_call_tags_api(
     'error_msg' => esc_html($error_msg)
   );
 }
+
+function wpat_get_local_match_tags(
+  $content, $title, $actual_tags
+) {
+  // suggest local tags
+  // loop through existing local tags not in $actual_tags and check whether
+  // each is present in $content or $title
+  $all_tags = get_tags();
+  $matched_names = array();
+  $matched_scores = array();
+  $content_lower = strtolower($content);
+  $title_lower = strtolower($title);
+  $title_weight = 5;
+  foreach ($all_tags as $tag) {
+    // check if tag in $content or $title
+    $content_count = substr_count($content_lower, strtolower($tag->name));
+    $title_count = substr_count($title_lower, strtolower($tag->name));
+    // compute score
+    $score = ($content_count + ($title_count * $title_weight)) * (log($tag->count + 1) + 1);
+    // if non-zero score, add tuple of name and score to array to be returned
+    if (($score > 0) and !(in_array($tag->name, $actual_tags))) {
+      $matched_names[] = $tag->name;
+      $matched_scores[] = $score;
+    }
+  }
+  // sort by scores
+  array_multisort(
+    $matched_scores, SORT_DESC, SORT_NUMERIC,
+    $matched_names, SORT_ASC, SORT_STRING
+  );
+  // zip into array of tuples
+  $matches = array_map(null, $matched_names, $matched_scores);
+  // error_log(print_r($matches));
+
+  return $matches;
+}
+
 ?>

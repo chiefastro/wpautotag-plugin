@@ -134,7 +134,6 @@ function wpat_script_enqueue_edit_post($hook) {
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'suggested_tags' => $suggested_tags['response'],
         'display_vars' => $display_vars,
-        'error_msg' => $suggested_tags['error_msg'],
       )
     );
   }
@@ -158,7 +157,7 @@ function wpat_get_tag_suggestion_header() {
   $html = '<img style="display:none;" id="st_ajax_loading" src="' . WPAUTOTAG__PLUGIN_URL . '/assets/images/ajax-loader.gif" alt="' . __( 'Ajax loading', 'wpat' ) . '" />';
   $html .= __( 'Get tag suggestions:', 'wpat' ) . '';
   $html .= '&nbsp; - &nbsp;<a data-ajaxaction="match" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Matches', 'wpat' ) . '</a>';
-  $html .= '&nbsp; - &nbsp;<a data-ajaxaction="similar" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Similar', 'wpat' ) . '</a>';
+  // $html .= '&nbsp; - &nbsp;<a data-ajaxaction="similar" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Similar', 'wpat' ) . '</a>';
   $html .= '&nbsp; - &nbsp;<a data-ajaxaction="keyword" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Keywords', 'wpat' ) . '</a>';
   $html .= '&nbsp; - &nbsp;<a data-ajaxaction="topic" class="suggest-action-link" href="#wpat_suggested_tags">' . __( 'Topics', 'wpat' ) . '</a>';
 

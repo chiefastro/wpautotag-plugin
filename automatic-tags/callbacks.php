@@ -166,15 +166,25 @@ function wpat_get_suggested_tags(
   $tag_suggestion_type
 ) {
   require_once( WPAUTOTAG__PLUGIN_DIR . 'tag-api.php' );
-
   try {
-    $suggested_tags = wpat_call_tags_api(
-      $content, $title, $actual_categories, $actual_tags, $post_id,
-      $tag_suggestion_type
-    );
+    if ($tag_suggestion_type == 'match') {
+        // suggest local tags
+        $suggested_tags = wpat_get_local_match_tags(
+          $content, $title, $actual_tags
+        );
+        $suggested_tags = array(
+          'status_code' => 200, 'response' => $suggested_tags, 'error_msg' => ""
+        );
+    } else {
+      // suggest from APIs
+      $suggested_tags = wpat_call_tags_api(
+        $content, $title, $actual_categories, $actual_tags, $post_id,
+        $tag_suggestion_type
+      );
+    }
   } catch (\Exception | \Throwable $e) {
     $suggested_tags = array(
-      'status_code' => 500, 'response' => $e->getMessage()
+      'status_code' => 500, 'response' => "", 'error_msg' => $e->getMessage()
     );
   }
   return $suggested_tags;

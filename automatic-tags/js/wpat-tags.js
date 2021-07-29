@@ -4,6 +4,7 @@ jQuery(document).ready(function($) {
 
   // display initial suggestions
   var tag_scores = {}
+  console.log(wpat_ajax_object_tags.suggested_tags)
   wpat_ajax_object_tags.suggested_tags.forEach((tag_score_tup, i) => {
     tag_scores[tag_score_tup[0]] = tag_score_tup[1]
   });
@@ -46,7 +47,8 @@ jQuery(document).ready(function($) {
         }
       },
       ( err ) => {
-        var error_msg = 'Error retrieving suggested tags: ' + data['error_msg']
+        console.log(err)
+        var error_msg = 'Error retrieving suggested tags: ' + err['response']
         $('#wpat_suggested_tags .container_clicktags').prepend(error_msg)
 
         // toggle displays
