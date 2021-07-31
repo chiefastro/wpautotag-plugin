@@ -39,3 +39,49 @@ p.wpat_suggested_category_header {
   font-style: italic;
   margin-bottom: 0;
 }
+
+/* Suggested Tags */
+
+/* a#open_clicktags {
+    color:red;
+}
+a#open_clicktags,
+a#close_clicktags{font-weight:700;border:0;text-decoration:none;display:block;margin-bottom:5px;}
+a#close_clicktags{display:none;} */
+
+/* Ajax Click Tags   */
+/* #wpat-clicks-tags .container_clicktags{border:3px dashed #D1E6EF;display:none;max-height:300px;overflow:auto;margin:3px 0 0;padding:6px;} */
+/* #wpat-clicks-tags .container_clicktags .used_term{-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";filter: alpha(opacity=50); opacity: 0.5;} */
+
+/* Click Tags   */
+.container_clicktags{display:block;}
+.container_clicktags span {
+  display:block;
+  float:left;
+  background-color:#f0f0ee;
+  background-image: url(assets/images/tag_blue_custom.png);
+  background-size: 12px;
+  background-repeat: no-repeat;
+  background-position: top 50% left 5px;
+  border:solid 1px;
+  border-radius:3px;
+  color:#333;
+  cursor:pointer;
+  border-color:#ccc #999 #999 #ccc;
+  margin:3px;
+  padding:3px 4px 3px 22px;
+}
+.container_clicktags span:hover {
+  color:#000;
+  background-color:#b6bdd2;
+  background-image: url(assets/images/tag_blue_custom.png);
+  background-size: 12px;
+  background-repeat: no-repeat;
+  background-position: top 50% left 5px;
+  border-color:#0a246a;
+}
+
+#wpat_suggested_tags .postbox-header .hndle {
+  flex-grow: unset !important;
+  display: block !important;
+}

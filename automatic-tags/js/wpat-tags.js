@@ -1,6 +1,7 @@
 jQuery(document).ready(function($) {
   // Begin suggested tags section
-  var ajax_url=wpat_ajax_object_tags.ajax_url
+  var ajax_url = wpat_ajax_object_tags.ajax_url
+  var img_dir = wpat_ajax_object_tags.img_dir
 
   // display initial suggestions
   var tag_scores = {}
@@ -11,10 +12,13 @@ jQuery(document).ready(function($) {
   displaySuggestedTags(Object.keys(tag_scores))
 
   // Call suggested tags API
-  $('a.suggest-action-link').click(function(event) {
+  $('a.wpat-suggest-action-link').click(function(event) {
     event.preventDefault()
 
-    $('#wpat_ajax_loading').show()
+    var loading_img = '<img id="wpat_ajax_loading" src="' + img_dir + 'indicator.gif">'
+    $('#wpat_suggested_tags .container_clicktags').html(loading_img)
+
+    // $('#wpat_ajax_loading').show()
 
     var payload = {
       'post_content': getContent(),
@@ -68,7 +72,7 @@ jQuery(document).ready(function($) {
     // add each suggested tag as a span within container
     for(var key in suggested_tags){
       $('#wpat_suggested_tags .container_clicktags').append(
-        '<span class="local">' + suggested_tags[key] + '</span>'
+        '<span>' + suggested_tags[key] + '</span>'
       )
     }
     $('#wpat_suggested_tags .container_clicktags').append('<div class="clear"></div>')
@@ -78,6 +82,7 @@ jQuery(document).ready(function($) {
       event.preventDefault()
       console.log('clicked tag with name ' + this.innerHTML)
       addTag(this.innerHTML)
+      $(this).addClass('used_term')
     })
   }
 
@@ -332,36 +337,36 @@ jQuery(document).ready(function($) {
 
   // Begin click tags section
 
-  if (wpat_ajax_object_tags.display_vars.state === 'hide') {
-    // Display initial link
-    $('#wpat-click-tags .inside').html(
-      '' + wpat_ajax_object_tags.display_vars.search_box +
-      ' <a href="#wpat_click_tags" id="open_clicktags">' +
-      wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
-      wpat_ajax_object_tags.display_vars.hide_txt +
-      '</span><div class="container_clicktags"></div>')
-  } else {
-    $('#wpat-click-tags .inside').html(
-      '' + wpat_ajax_object_tags.display_vars.search_box +
-      ' <a href="#wpat_click_tags" id="open_clicktags">' +
-      wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
-      wpat_ajax_object_tags.display_vars.hide_txt +
-      '</span><div class="container_clicktags"></div>')
-  }
+  // if (wpat_ajax_object_tags.display_vars.state === 'hide') {
+  //   // Display initial link
+  //   $('#wpat-click-tags .inside').html(
+  //     '' + wpat_ajax_object_tags.display_vars.search_box +
+  //     ' <a href="#wpat_click_tags" id="open_clicktags">' +
+  //     wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
+  //     wpat_ajax_object_tags.display_vars.hide_txt +
+  //     '</span><div class="container_clicktags"></div>')
+  // } else {
+  //   $('#wpat-click-tags .inside').html(
+  //     '' + wpat_ajax_object_tags.display_vars.search_box +
+  //     ' <a href="#wpat_click_tags" id="open_clicktags">' +
+  //     wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
+  //     wpat_ajax_object_tags.display_vars.hide_txt +
+  //     '</span><div class="container_clicktags"></div>')
+  // }
 
   // Take current post ID
   var current_post_id = getPostID()
 
-  if (wpat_ajax_object_tags.display_vars.state === 'show') {
+  // if (wpat_ajax_object_tags.display_vars.state === 'show') {
     load_click_tags()
-  }
+  // }
 
   // Show click tags
-  $('#open_clicktags').click(function (event) {
-    event.preventDefault()
-    load_click_tags()
-    return false
-  })
+  // $('#open_clicktags').click(function (event) {
+  //   event.preventDefault()
+  //   load_click_tags()
+  //   return false
+  // })
 
   function load_click_tags(search = '') {
     if (search) {
