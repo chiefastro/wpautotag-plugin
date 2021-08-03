@@ -67,11 +67,16 @@ function wpat_call_tags_api(
   // handle different status codes
 
   if ($status_code == 200) {
-    $result = $body_decode[0];
-    // $result = wpat_strcase(
-    //   $body_decode[0]->predicted_tag,
-    //   get_option('wpat_capital_strategy')
-    // );
+    $result_raw = $body_decode[0];
+    $capital_strategy = get_option('wpat_capital_strategy_tag');
+    // exclude actual tags
+    $result = array();
+    foreach($result_raw as $tup) {
+        if(!in_array($tup[0], $actual_tags)) {
+          $tag_name = wpat_strcase($tup[0], $capital_strategy);
+          $result[] = array($tag_name, $tup[1]);
+        }
+    }
   } else {
     // mock
     // $result = array('tag abc', 'xyz tag', 'and 123 tag');
@@ -99,7 +104,7 @@ function wpat_call_tags_api(
   return array(
     'status_code' => $status_code,
     'response' => $result,
-    'error_msg' => esc_html($error_msg)
+    'error_msg' => $error_msg
   );
 }
 

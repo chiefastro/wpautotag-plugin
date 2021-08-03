@@ -207,18 +207,23 @@ function wpat_maybe_create_tag( $tag_name = '' ) {
   }
   return $term_id;
 }
-function wpat_maybe_create_tag_callback() {
-  $tag_name = $_REQUEST['tag_name'];
-  $term_id = wpat_maybe_create_tag($tag_name);
-  wp_send_json_success( [
-    'term_id' => $term_id,
-    'tag_name' => $tag_name
-  ] );
+function wpat_maybe_create_tags_callback() {
+  // error_log(print_r($_REQUEST['tag_names']));
+  $response = array();
+  foreach ($_REQUEST['tag_names'] as $tag_name) {
+    $term_id = wpat_maybe_create_tag($tag_name);
+    $response[] = array(
+      'term_id' => $term_id,
+      'tag_name' => $tag_name
+    );
+  }
+  // error_log(print_r($response));
+  wp_send_json_success( $response );
 }
 
 if ( is_admin() ) {
-	add_action( 'wp_ajax_nopriv_wpat_maybe_create_tag', 'wpat_maybe_create_tag_callback' );
-	add_action( 'wp_ajax_wpat_maybe_create_tag', 'wpat_maybe_create_tag_callback' );
+	add_action( 'wp_ajax_nopriv_wpat_maybe_create_tags', 'wpat_maybe_create_tags_callback' );
+	add_action( 'wp_ajax_wpat_maybe_create_tags', 'wpat_maybe_create_tags_callback' );
 }
 
 ?>

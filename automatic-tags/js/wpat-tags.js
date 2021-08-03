@@ -4,12 +4,12 @@ jQuery(document).ready(function($) {
   var img_dir = wpat_ajax_object_tags.img_dir
 
   // display initial suggestions
-  var tag_scores = {}
-  console.log(wpat_ajax_object_tags.suggested_tags)
-  wpat_ajax_object_tags.suggested_tags.forEach((tag_score_tup, i) => {
-    tag_scores[tag_score_tup[0]] = tag_score_tup[1]
-  });
-  displaySuggestedTags(Object.keys(tag_scores))
+  // var tag_scores = {}
+  // console.log(wpat_ajax_object_tags.suggested_tags)
+  // wpat_ajax_object_tags.suggested_tags.forEach((tag_score_tup, i) => {
+  //   tag_scores[tag_score_tup[0]] = tag_score_tup[1]
+  // });
+  // displaySuggestedTags(Object.keys(tag_scores))
 
   // Call suggested tags API
   $('a.wpat-suggest-action-link').click(function(event) {
@@ -37,52 +37,68 @@ jQuery(document).ready(function($) {
       ( data ) => {
         // display suggestions
         console.log(data)
-        var tag_scores = {}
-        data['response'].forEach((tag_score_tup, i) => {
-          tag_scores[tag_score_tup[0]] = tag_score_tup[1]
-        });
-        console.log(tag_scores)
-        displaySuggestedTags(Object.keys(tag_scores))
-
-        // toggle displays
-        $('#wpat_ajax_loading').hide()
-        if ($('#wpat_suggested_tags .inside').css('display') != 'block') {
-          $('#wpat_suggested_tags').toggleClass('closed')
+        // clear container
+        $('#wpat_suggested_tags .container_clicktags').empty()
+        if (data['status_code'] == 200) {
+          var tag_scores = {}
+          data['response'].forEach((tag_score_tup, i) => {
+            tag_scores[tag_score_tup[0]] = tag_score_tup[1]
+          });
+          console.log(tag_scores)
+          displaySuggestedTags(Object.keys(tag_scores))
+        } else {
+          // clear container
+          $('#wpat_suggested_tags .container_clicktags').empty()
+          // add error message
+          $('#wpat_suggested_tags .container_clicktags').html(data['error_msg'])
+          // add error class
+          $('#wpat_suggested_tags .container_clicktags').addClass('wpat_api_error')
         }
       },
       ( err ) => {
         console.log(err)
-        var error_msg = 'Error retrieving suggested tags: ' + err['response']
-        $('#wpat_suggested_tags .container_clicktags').prepend(error_msg)
-
-        // toggle displays
-        $('#wpat_ajax_loading').hide()
-        if ($('#wpat_suggested_tags .inside').css('display') != 'block') {
-          $('#wpat_suggested_tags').toggleClass('closed')
-        }
-        console.log(error_msg)
+        // clear container
+        $('#wpat_suggested_tags .container_clicktags').empty()
+        // add error message
+        $('#wpat_suggested_tags .container_clicktags').html(err['error_msg'])
+        // add error class
+        $('#wpat_suggested_tags .container_clicktags').addClass('wpat_api_error')
       }
     );
     return false
   })
 
   function displaySuggestedTags(suggested_tags) {
-    // clear container
-    $('#wpat_suggested_tags .container_clicktags').empty()
+    // remove error class if present
+    $('#wpat_suggested_tags .container_clicktags').removeClass('wpat_api_error')
+    // button to add all tags
+    $('#wpat_suggested_tags .container_clicktags').append(
+      '<span class="wpat_add_all_tags">ADD ALL TAGS</span>'
+    )
+    $('#wpat_suggested_tags .container_clicktags').append('<div class="clear"></div>')
     // add each suggested tag as a span within container
     for(var key in suggested_tags){
       $('#wpat_suggested_tags .container_clicktags').append(
-        '<span>' + suggested_tags[key] + '</span>'
+        '<span class="wpat_add_single_tag">' + suggested_tags[key] + '</span>'
       )
     }
     $('#wpat_suggested_tags .container_clicktags').append('<div class="clear"></div>')
 
     // enable suggested tags to be added to post
-    $('#wpat_suggested_tags .container_clicktags span').click(function(event) {
+    $('.wpat_add_single_tag').click(function(event) {
       event.preventDefault()
       console.log('clicked tag with name ' + this.innerHTML)
-      addTag(this.innerHTML)
+      addTags([this.innerHTML])
       $(this).addClass('used_term')
+    })
+    // enable button to add all tags
+    $('.wpat_add_all_tags').click(function(event) {
+      event.preventDefault()
+      var tags = $('.wpat_add_single_tag').toArray().map(span => span.innerHTML);
+      addTags(tags)
+      $('.wpat_add_single_tag').each((i, span) => {
+        $(span).addClass('used_term')
+      });
     })
   }
 
@@ -249,36 +265,25 @@ jQuery(document).ready(function($) {
 
   // Begin add tags section
 
-  function addTag (tag) {
-    console.log('adding tag ' + tag)
+  function addTags (tags) {
+    console.log('adding tags ' + tags)
     // Trim tag
-    tag = tag.replace(/^\s+/, '').replace(/\s+$/, '')
+    tags = tags.map(tag => tag.replace(/^\s+/, '').replace(/\s+$/, ''))
 
-    if (document.getElementById('adv-tags-input')) { // Tags input from TaxoPress
-      console.log('adding tag with adv-tags-input')
-
-      var tag_entry = document.getElementById('adv-tags-input')
-      if (tag_entry.value.length > 0 && !tag_entry.value.match(/,\s*$/)) {
-        tag_entry.value += ', '
-      }
-
-      var re = new RegExp(tag + ',')
-      if (!tag_entry.value.match(re)) {
-        tag_entry.value += tag + ', '
-      }
-
-    } else if (document.getElementById('new-tag-post_tag')) {
+    if (document.getElementById('new-tag-post_tag')) {
       console.log('adding tag with legacy WP UI')
       // Default tags input from WordPress
 
-      tag.replace(/\s+,+\s*/g, ',').replace(/,+/g, ',').replace(/,+\s+,+/g, ',')
-        .replace(/,+\s*$/g, '').replace(/^\s*,+/g, '')
-      if ($('#new-tag-post_tag').val() === '') {
-        $('#new-tag-post_tag').val(tag)
-      } else {
-        $('#new-tag-post_tag').val($('#new-tag-post_tag').val() + ', ' + tag)
-      }
-      //$('.tagadd').WithSelect()
+      // loop through all tags and append to list of tags
+      tags.forEach((tag, i) => {
+        tag.replace(/\s+,+\s*/g, ',').replace(/,+/g, ',').replace(/,+\s+,+/g, ',')
+          .replace(/,+\s*$/g, '').replace(/^\s*,+/g, '')
+        if ($('#new-tag-post_tag').val() === '') {
+          $('#new-tag-post_tag').val(tag)
+        } else {
+          $('#new-tag-post_tag').val($('#new-tag-post_tag').val() + ', ' + tag)
+        }
+      })
 
     } else if (typeof wp.data != 'undefined'
       && typeof wp.data.select('core') != 'undefined'
@@ -289,43 +294,46 @@ jQuery(document).ready(function($) {
       // Get current post_tags
       var tags_taxonomy = wp.data.select('core').getTaxonomy('post_tag')
       var tag_rest_base = tags_taxonomy && tags_taxonomy.rest_base
-      var tags = tag_rest_base && wp.data.select('core/editor')
+      var tag_ids = tag_rest_base && wp.data.select('core/editor')
         .getEditedPostAttribute(tag_rest_base)
 
-      var newTags = JSON.parse(JSON.stringify(tags));
+      var newTags = JSON.parse(JSON.stringify(tag_ids));
 
       var data = {
-    		'action': 'wpat_maybe_create_tag',
-    		'tag_name': tag,
+    		'action': 'wpat_maybe_create_tags',
+    		'tag_names': tags,
     	};
       console.log(data)
       $.post(ajax_url, data)
       .done(function(result){
         console.log('add tag ajax success')
         console.log(result)
-        if (result.data.term_id > 0) {
-          newTags.push(result.data.term_id);
-          newTags = newTags.filter(onlyUnique);
-
-          var new_tag = {}
-          new_tag[tag_rest_base] = newTags
-
-          wp.data.dispatch('core/editor').editPost( new_tag );
-
-          // open the tags panel
-          if (wp.data.select('core/edit-post')
-            .isEditorPanelOpened('taxonomy-panel-post_tag') === false) {
-            wp.data.dispatch('core/edit-post')
-              .toggleEditorPanelOpened('taxonomy-panel-post_tag');
-          } else {
-            wp.data.dispatch('core/edit-post')
-              .toggleEditorPanelOpened('taxonomy-panel-post_tag');
-            wp.data.dispatch('core/edit-post')
-              .toggleEditorPanelOpened('taxonomy-panel-post_tag');
+        // loop through all tags and append to list of tags
+        result.data.forEach((tag_data, i) => {
+          if (tag_data.term_id > 0) {
+            newTags.push(tag_data.term_id);
+            newTags = newTags.filter(onlyUnique);
           }
+        })
+
+        var new_tag = {}
+        new_tag[tag_rest_base] = newTags
+
+        wp.data.dispatch('core/editor').editPost( new_tag );
+
+        // open the tags panel
+        if (wp.data.select('core/edit-post')
+          .isEditorPanelOpened('taxonomy-panel-post_tag') === false) {
+          wp.data.dispatch('core/edit-post')
+            .toggleEditorPanelOpened('taxonomy-panel-post_tag');
+        } else {
+          wp.data.dispatch('core/edit-post')
+            .toggleEditorPanelOpened('taxonomy-panel-post_tag');
+          wp.data.dispatch('core/edit-post')
+            .toggleEditorPanelOpened('taxonomy-panel-post_tag');
         }
-      }).fail(function () {
-        console.log('error when trying to create tag')
+      }).fail(function (err) {
+        console.log('error when trying to create tag:', err)
       });
     } else {
       console.log('no tags input found...')

@@ -51,7 +51,7 @@ function wpat_call_category_api(
   if ($status_code == 200) {
     $result = wpat_strcase(
       $body_decode[0]->predicted_category,
-      get_option('wpat_capital_strategy')
+      get_option('wpat_capital_strategy_cat')
     );
   } else {
     $result = 'Error';
@@ -77,7 +77,7 @@ function wpat_call_category_api(
   return array(
     'status_code' => $status_code,
     'response' => esc_attr($result),
-    'error_msg' => esc_html($error_msg)
+    'error_msg' => $error_msg
   );
 }
 ?>

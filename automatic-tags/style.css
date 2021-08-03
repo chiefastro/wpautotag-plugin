@@ -51,11 +51,11 @@ a#close_clicktags{display:none;} */
 
 /* Ajax Click Tags   */
 /* #wpat-clicks-tags .container_clicktags{border:3px dashed #D1E6EF;display:none;max-height:300px;overflow:auto;margin:3px 0 0;padding:6px;} */
-/* #wpat-clicks-tags .container_clicktags .used_term{-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";filter: alpha(opacity=50); opacity: 0.5;} */
+#wpat_suggested_tags .container_clicktags .used_term{-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";filter: alpha(opacity=50); opacity: 0.5;}
 
 /* Click Tags   */
-.container_clicktags{display:block;}
-.container_clicktags span {
+#wpat_suggested_tags .container_clicktags{display:block;}
+#wpat_suggested_tags .container_clicktags span {
   display:block;
   float:left;
   background-color:#f0f0ee;
@@ -71,7 +71,7 @@ a#close_clicktags{display:none;} */
   margin:3px;
   padding:3px 4px 3px 22px;
 }
-.container_clicktags span:hover {
+#wpat_suggested_tags .container_clicktags span:hover {
   color:#000;
   background-color:#b6bdd2;
   background-image: url(assets/images/tag_blue_custom.png);
@@ -80,8 +80,42 @@ a#close_clicktags{display:none;} */
   background-position: top 50% left 5px;
   border-color:#0a246a;
 }
+#wpat_suggested_tags .container_clicktags span.wpat_add_all_tags {
+  background-color:#3f48cc;
+  color:white;
+  font-weight: bold;
+  padding: 3px 6px;
+  background-image: none;
+}
+#wpat_suggested_tags .container_clicktags span.wpat_add_all_tags:hover {
+  background-color:#c2c4dc;
+  color:#333;
+}
 
 #wpat_suggested_tags .postbox-header .hndle {
   flex-grow: unset !important;
   display: block !important;
+}
+
+a.wpat-suggest-action-link {
+  display:block;
+  float:left;
+  background-color:#f0f0ee;
+  border:solid 1px;
+  border-radius:3px;
+  cursor:pointer;
+  border-color:#ccc #999 #999 #ccc;
+  margin:3px;
+  padding:3px 4px 3px 4px;
+  text-decoration:none;
+}
+a.wpat-suggest-action-link:hover {
+  color:#000;
+  background-color:#b6bdd2;
+}
+.wpat-suggest-action-header {
+  display:block;
+  float:left;
+  margin:3px;
+  padding:3px 4px 3px 4px;
 }
