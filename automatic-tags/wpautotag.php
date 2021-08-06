@@ -107,10 +107,6 @@ function wpat_script_enqueue_edit_post($hook) {
       $post->post_content, $post->post_title,
       $actual_categories, $actual_tags, $post->ID
     );
-    // $suggested_tags = wpat_get_suggested_tags(
-    //   $post->post_content, $post->post_title,
-    //   $actual_categories, $actual_tags, $post->ID, 'match'
-    // );
 
   	wp_localize_script(
       'ajax-script-wpat-cats', 'wpat_ajax_object_cats',
@@ -120,21 +116,11 @@ function wpat_script_enqueue_edit_post($hook) {
         'error_msg' => $suggested_category['error_msg'],
       )
     );
-    // $display_vars = array(
-    //   'show_txt'    => __( 'Click to display tags', 'wpat' ),
-    //   'hide_txt'    => __( 'Click tags to add them to this post', 'wpat' ),
-    //   'state'       => 'show',
-    //   'search_icon' => WPAUTOTAG__PLUGIN_URL . '/assets/indicator.gif',
-    //   'search_box'  => '<input type="text" class="click-tag-search-box" placeholder="'.__(
-    //     'Start typing to search', 'wpat').'" size="26" autocomplete="off">',
-    // );
     wp_localize_script(
       'ajax-script-wpat-tags', 'wpat_ajax_object_tags',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
-        'img_dir' => WPAUTOTAG__PLUGIN_URL . '/assets/images/',
-        // 'suggested_tags' => $suggested_tags['response'],
-        // 'display_vars' => $display_vars,
+        'img_dir' => WPAUTOTAG__PLUGIN_URL . '/images/',
       )
     );
   }

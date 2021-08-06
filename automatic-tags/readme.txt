@@ -2,8 +2,7 @@
 Contributors: chiefastro
 Author URI: http://jrandblog.com/
 Plugin URL: https://wpautotag.com
-Tags: tags, categories, taxonomy, machine learning, natural language
-  processing, nlp, automation, suggestions
+Tags: tags, categories, taxonomy, machine learning, natural language processing, nlp, automation, suggestions
 Requires at least: 5.0
 Tested up to: 5.8.0
 Requires PHP: 7.3

@@ -47,7 +47,7 @@ p.wpat_suggested_category_header {
   display:block;
   float:left;
   background-color:#f0f0ee;
-  background-image: url(assets/images/tag.png);
+  background-image: url(images/tag.png);
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: top 50% left 5px;
@@ -62,7 +62,7 @@ p.wpat_suggested_category_header {
 #wpat_suggested_tags .wpat_tag_container span:hover {
   color:#000;
   background-color:#b6bdd2;
-  background-image: url(assets/images/tag.png);
+  background-image: url(images/tag.png);
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: top 50% left 5px;
