@@ -5,8 +5,11 @@ function wpat_suggested_category_api(){
     'wpautotag/v1',
     '/category/suggest/',
     array(
-      'methods' => WP_REST_Server::EDITABLE,//'POST', //
+      'methods' => WP_REST_Server::EDITABLE,
       'callback' => 'wpat_get_suggested_category_rest',
+      'permission_callback' => function() {
+          return current_user_can( 'edit_posts' );
+      },
       'args' => array(
         'post_content' => array(
           'default' => '',
@@ -92,8 +95,11 @@ function wpat_suggested_tags_api(){
     'wpautotag/v1',
     '/tag/suggest/',
     array(
-      'methods' => WP_REST_Server::EDITABLE,//'POST', //
+      'methods' => WP_REST_Server::EDITABLE,
       'callback' => 'wpat_get_suggested_tags_rest',
+      'permission_callback' => function() {
+          return current_user_can( 'edit_posts' );
+      },
       'args' => array(
         'post_content' => array(
           'default' => '',
@@ -208,7 +214,6 @@ function wpat_maybe_create_tag( $tag_name = '' ) {
   return $term_id;
 }
 function wpat_maybe_create_tags_callback() {
-  // error_log(print_r($_REQUEST['tag_names']));
   $response = array();
   foreach ($_REQUEST['tag_names'] as $tag_name) {
     $term_id = wpat_maybe_create_tag($tag_name);
@@ -217,7 +222,6 @@ function wpat_maybe_create_tags_callback() {
       'tag_name' => $tag_name
     );
   }
-  // error_log(print_r($response));
   wp_send_json_success( $response );
 }
 

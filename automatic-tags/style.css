@@ -41,25 +41,13 @@ p.wpat_suggested_category_header {
 }
 
 /* Suggested Tags */
-
-/* a#open_clicktags {
-    color:red;
-}
-a#open_clicktags,
-a#close_clicktags{font-weight:700;border:0;text-decoration:none;display:block;margin-bottom:5px;}
-a#close_clicktags{display:none;} */
-
-/* Ajax Click Tags   */
-/* #wpat-clicks-tags .container_clicktags{border:3px dashed #D1E6EF;display:none;max-height:300px;overflow:auto;margin:3px 0 0;padding:6px;} */
-#wpat_suggested_tags .container_clicktags .used_term{-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";filter: alpha(opacity=50); opacity: 0.5;}
-
-/* Click Tags   */
-#wpat_suggested_tags .container_clicktags{display:block;}
-#wpat_suggested_tags .container_clicktags span {
+#wpat_suggested_tags .wpat_tag_container{display:block;}
+#wpat_suggested_tags .wpat_tag_container .used_term{-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";filter: alpha(opacity=50); opacity: 0.5;}
+#wpat_suggested_tags .wpat_tag_container span {
   display:block;
   float:left;
   background-color:#f0f0ee;
-  background-image: url(assets/images/tag_blue_custom.png);
+  background-image: url(assets/images/tag.png);
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: top 50% left 5px;
@@ -71,23 +59,23 @@ a#close_clicktags{display:none;} */
   margin:3px;
   padding:3px 4px 3px 22px;
 }
-#wpat_suggested_tags .container_clicktags span:hover {
+#wpat_suggested_tags .wpat_tag_container span:hover {
   color:#000;
   background-color:#b6bdd2;
-  background-image: url(assets/images/tag_blue_custom.png);
+  background-image: url(assets/images/tag.png);
   background-size: 12px;
   background-repeat: no-repeat;
   background-position: top 50% left 5px;
   border-color:#0a246a;
 }
-#wpat_suggested_tags .container_clicktags span.wpat_add_all_tags {
+#wpat_suggested_tags .wpat_tag_container span.wpat_add_all_tags {
   background-color:#3f48cc;
   color:white;
   font-weight: bold;
   padding: 3px 6px;
   background-image: none;
 }
-#wpat_suggested_tags .container_clicktags span.wpat_add_all_tags:hover {
+#wpat_suggested_tags .wpat_tag_container span.wpat_add_all_tags:hover {
   background-color:#c2c4dc;
   color:#333;
 }
@@ -116,6 +104,6 @@ a.wpat-suggest-action-link:hover {
 .wpat-suggest-action-header {
   display:block;
   float:left;
-  margin:3px;
-  padding:3px 4px 3px 4px;
+  margin:3px 3px 3px 0px;
+  padding:3px 4px 3px 0px;
 }

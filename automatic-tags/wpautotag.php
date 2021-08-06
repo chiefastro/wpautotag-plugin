@@ -148,17 +148,15 @@ function wpat_add_tag_suggestion_metabox() {
 }
 function wpat_tag_suggestion_metabox() {
   ?>
-  <span class="container_clicktags">
-    <h2>Click a tag type to receive suggestions.</h2>
+  <span class="wpat_tag_container">
+  Click a tag type to receive suggestions.
   <div class="clear"></div>
   </span>
   <?php
 }
 function wpat_get_tag_suggestion_header() {
-  // $html = '<img style="display:none;" id="wpat_ajax_loading" src="' . WPAUTOTAG__PLUGIN_URL . '/assets/images/indicator.gif" alt="' . __( 'Ajax loading', 'wpat' ) . '" />';
   $html = '<div class="wpat-suggest-action-header">Suggested Tags</div>';
   $html .= '<a data-ajaxaction="match" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Matches', 'wpat' ) . '</a>';
-  // $html .= '<a data-ajaxaction="similar" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Similar', 'wpat' ) . '</a>';
   $html .= '<a data-ajaxaction="keyword" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Keywords', 'wpat' ) . '</a>';
   $html .= '<a data-ajaxaction="topic" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Topics', 'wpat' ) . '</a>';
   $html .= '<div class="clear"></div>';

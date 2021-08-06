@@ -2,7 +2,7 @@
 function wpat_call_category_api(
   $content, $title, $actual_categories, $actual_tags, $post_id
 ) {
-  $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/category-model';
+  $endpoint_url = 'https://api.wpautotag.com/categories/popular/';
 
   // get domain-level inputs to model
   $category_prior = wpat_get_category_prior();

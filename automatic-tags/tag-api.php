@@ -3,20 +3,14 @@ function wpat_call_tags_api(
   $content, $title, $actual_categories, $actual_tags, $post_id,
   $tag_suggestion_type
 ) {
-  // $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/tag-model';
   switch ($tag_suggestion_type) {
     case "keyword":
-      // $endpoint_url = 'https://api.wpautotag.com/prod/tags-keyphrases';
-      // $endpoint_url = 'https://6j226s2rz7.execute-api.us-east-2.amazonaws.com/prod/tags/keyphrases';
       $endpoint_url = 'https://api.wpautotag.com/tags/keyphrases/';
       break;
     case "topic":
-      // $endpoint_url = 'https://api.wpautotag.com/prod/tags-topics';
-      // $endpoint_url = 'https://hapes71nf2.execute-api.us-east-2.amazonaws.com/prod/tags/topics';
       $endpoint_url = 'https://api.wpautotag.com/tags/topics/';
       break;
     default:
-      // $endpoint_url = 'https://6j226s2rz7.execute-api.us-east-2.amazonaws.com/prod/tags/keyphrases';
       $endpoint_url = 'https://api.wpautotag.com/tags/keyphrases/';
   }
 
@@ -59,9 +53,6 @@ function wpat_call_tags_api(
   $response = wp_remote_post( $endpoint_url, $options );
   $raw_body = wp_remote_retrieve_body( $response );
   $body_decode = json_decode($raw_body);
-  // error_log(print_r($response, true));
-  // error_log(print_r($raw_body, true));
-  // error_log(print_r($body_decode, true));
   $status_code = wp_remote_retrieve_response_code( $response );
 
   // handle different status codes
@@ -69,17 +60,22 @@ function wpat_call_tags_api(
   if ($status_code == 200) {
     $result_raw = $body_decode[0];
     $capital_strategy = get_option('wpat_capital_strategy_tag');
-    // exclude actual tags
+    // exclude actual tags, apply capital strategy, and filter low confidence
+    // suggestions
     $result = array();
     foreach($result_raw as $tup) {
-        if(!in_array($tup[0], $actual_tags)) {
-          $tag_name = wpat_strcase($tup[0], $capital_strategy);
-          $result[] = array($tag_name, $tup[1]);
+        if(!in_array(
+          strtolower($tup[0]), array_map("strtolower", $actual_tags)
+        )){
+          // filter low confidence
+          $skip = ($tag_suggestion_type == "topic") & ($tup[1] < 1.4);
+          if (!$skip) {
+            $tag_name = wpat_strcase($tup[0], $capital_strategy);
+            $result[] = array($tag_name, $tup[1]);
+          }
         }
     }
   } else {
-    // mock
-    // $result = array('tag abc', 'xyz tag', 'and 123 tag');
     $result = 'Error';
   }
 
@@ -88,7 +84,6 @@ function wpat_call_tags_api(
   } elseif ($status_code == 403) {
     if ($wpat_api_key) {
       $error_msg = 'Invalid API key | ' . '<br>' . $body_decode->message;
-       // . '<br>' . $response . ' <br> ' . $raw_body . ' <br> ' . $body_decode;
     } else {
       $error_msg = $null_api_key_msg;
     }
@@ -127,7 +122,9 @@ function wpat_get_local_match_tags(
     // compute score
     $score = ($content_count + ($title_count * $title_weight)) * (log($tag->count + 1) + 1);
     // if non-zero score, add tuple of name and score to array to be returned
-    if (($score > 0) and !(in_array($tag->name, $actual_tags))) {
+    if (($score > 0) and !(in_array(
+        strtolower($tag->name), array_map("strtolower", $actual_tags)
+    ))) {
       $matched_names[] = $tag->name;
       $matched_scores[] = $score;
     }
@@ -139,7 +136,6 @@ function wpat_get_local_match_tags(
   );
   // zip into array of tuples
   $matches = array_map(null, $matched_names, $matched_scores);
-  // error_log(print_r($matches));
 
   return $matches;
 }

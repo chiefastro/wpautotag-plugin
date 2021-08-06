@@ -3,22 +3,12 @@ jQuery(document).ready(function($) {
   var ajax_url = wpat_ajax_object_tags.ajax_url
   var img_dir = wpat_ajax_object_tags.img_dir
 
-  // display initial suggestions
-  // var tag_scores = {}
-  // console.log(wpat_ajax_object_tags.suggested_tags)
-  // wpat_ajax_object_tags.suggested_tags.forEach((tag_score_tup, i) => {
-  //   tag_scores[tag_score_tup[0]] = tag_score_tup[1]
-  // });
-  // displaySuggestedTags(Object.keys(tag_scores))
-
   // Call suggested tags API
   $('a.wpat-suggest-action-link').click(function(event) {
     event.preventDefault()
 
     var loading_img = '<img id="wpat_ajax_loading" src="' + img_dir + 'indicator.gif">'
-    $('#wpat_suggested_tags .container_clicktags').html(loading_img)
-
-    // $('#wpat_ajax_loading').show()
+    $('#wpat_suggested_tags .wpat_tag_container').html(loading_img)
 
     var payload = {
       'post_content': getContent(),
@@ -36,33 +26,30 @@ jQuery(document).ready(function($) {
     } ).then(
       ( data ) => {
         // display suggestions
-        console.log(data)
         // clear container
-        $('#wpat_suggested_tags .container_clicktags').empty()
+        $('#wpat_suggested_tags .wpat_tag_container').empty()
         if (data['status_code'] == 200) {
           var tag_scores = {}
           data['response'].forEach((tag_score_tup, i) => {
             tag_scores[tag_score_tup[0]] = tag_score_tup[1]
           });
-          console.log(tag_scores)
           displaySuggestedTags(Object.keys(tag_scores))
         } else {
           // clear container
-          $('#wpat_suggested_tags .container_clicktags').empty()
+          $('#wpat_suggested_tags .wpat_tag_container').empty()
           // add error message
-          $('#wpat_suggested_tags .container_clicktags').html(data['error_msg'])
+          $('#wpat_suggested_tags .wpat_tag_container').html(data['error_msg'])
           // add error class
-          $('#wpat_suggested_tags .container_clicktags').addClass('wpat_api_error')
+          $('#wpat_suggested_tags .wpat_tag_container').addClass('wpat_api_error')
         }
       },
       ( err ) => {
-        console.log(err)
         // clear container
-        $('#wpat_suggested_tags .container_clicktags').empty()
+        $('#wpat_suggested_tags .wpat_tag_container').empty()
         // add error message
-        $('#wpat_suggested_tags .container_clicktags').html(err['error_msg'])
+        $('#wpat_suggested_tags .wpat_tag_container').html(err['error_msg'])
         // add error class
-        $('#wpat_suggested_tags .container_clicktags').addClass('wpat_api_error')
+        $('#wpat_suggested_tags .wpat_tag_container').addClass('wpat_api_error')
       }
     );
     return false
@@ -70,24 +57,23 @@ jQuery(document).ready(function($) {
 
   function displaySuggestedTags(suggested_tags) {
     // remove error class if present
-    $('#wpat_suggested_tags .container_clicktags').removeClass('wpat_api_error')
+    $('#wpat_suggested_tags .wpat_tag_container').removeClass('wpat_api_error')
     // button to add all tags
-    $('#wpat_suggested_tags .container_clicktags').append(
+    $('#wpat_suggested_tags .wpat_tag_container').append(
       '<span class="wpat_add_all_tags">ADD ALL TAGS</span>'
     )
-    $('#wpat_suggested_tags .container_clicktags').append('<div class="clear"></div>')
+    $('#wpat_suggested_tags .wpat_tag_container').append('<div class="clear"></div>')
     // add each suggested tag as a span within container
     for(var key in suggested_tags){
-      $('#wpat_suggested_tags .container_clicktags').append(
+      $('#wpat_suggested_tags .wpat_tag_container').append(
         '<span class="wpat_add_single_tag">' + suggested_tags[key] + '</span>'
       )
     }
-    $('#wpat_suggested_tags .container_clicktags').append('<div class="clear"></div>')
+    $('#wpat_suggested_tags .wpat_tag_container').append('<div class="clear"></div>')
 
     // enable suggested tags to be added to post
     $('.wpat_add_single_tag').click(function(event) {
       event.preventDefault()
-      console.log('clicked tag with name ' + this.innerHTML)
       addTags([this.innerHTML])
       $(this).addClass('used_term')
     })
@@ -306,8 +292,6 @@ jQuery(document).ready(function($) {
       console.log(data)
       $.post(ajax_url, data)
       .done(function(result){
-        console.log('add tag ajax success')
-        console.log(result)
         // loop through all tags and append to list of tags
         result.data.forEach((tag_data, i) => {
           if (tag_data.term_id > 0) {
@@ -341,69 +325,6 @@ jQuery(document).ready(function($) {
   }
   function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
-  }
-
-  // Begin click tags section
-
-  // if (wpat_ajax_object_tags.display_vars.state === 'hide') {
-  //   // Display initial link
-  //   $('#wpat-click-tags .inside').html(
-  //     '' + wpat_ajax_object_tags.display_vars.search_box +
-  //     ' <a href="#wpat_click_tags" id="open_clicktags">' +
-  //     wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
-  //     wpat_ajax_object_tags.display_vars.hide_txt +
-  //     '</span><div class="container_clicktags"></div>')
-  // } else {
-  //   $('#wpat-click-tags .inside').html(
-  //     '' + wpat_ajax_object_tags.display_vars.search_box +
-  //     ' <a href="#wpat_click_tags" id="open_clicktags">' +
-  //     wpat_ajax_object_tags.display_vars.show_txt + '</a><span id="close_clicktags">' +
-  //     wpat_ajax_object_tags.display_vars.hide_txt +
-  //     '</span><div class="container_clicktags"></div>')
-  // }
-
-  // Take current post ID
-  var current_post_id = getPostID()
-
-  // if (wpat_ajax_object_tags.display_vars.state === 'show') {
-    load_click_tags()
-  // }
-
-  // Show click tags
-  // $('#open_clicktags').click(function (event) {
-  //   event.preventDefault()
-  //   load_click_tags()
-  //   return false
-  // })
-
-  function load_click_tags(search = '') {
-    if (search) {
-      $(".click-tag-search-box").css(
-        "background", "url(" +
-        wpat_ajax_object_tags.display_vars.search_icon + ") no-repeat 99%"
-      );
-      // filter existing tags in suggested tags container
-      $('#wpat_suggested_tags .container_clicktags span')
-        .filter(function() {
-          return this.val().includes(search);
-        })
-    }
-  }
-
-  //inititiate click tags search when user starts typing
-  //setup before functions
-  var typingTimer;                //timer identifier
-  var doneTypingInterval = 500;  //time in ms
-
-  //on keyup, start the countdown
-  $(document).on('keyup', '.click-tag-search-box', function () {
-      clearTimeout(typingTimer);
-          typingTimer = setTimeout(doneTyping, doneTypingInterval);
-  });
-
-  //user is "finished typing," do something
-  function doneTyping() {
-    load_click_tags($('.click-tag-search-box').val());
   }
 
 })
