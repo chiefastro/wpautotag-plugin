@@ -3,7 +3,7 @@
    Plugin Name: Automatic Tags
    Plugin URI: https://wpautotag.com
    Description: Automatically tag and categorize your posts.
-   Version: 0.0.1
+   Version: 0.1.0
    Author: Jared Rand
    Author URI: http://jrandblog.com
    License: GPLv3
