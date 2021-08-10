@@ -2,7 +2,7 @@
 function wpat_call_category_api(
   $content, $title, $actual_categories, $actual_tags, $post_id
 ) {
-  $endpoint_url = 'https://4wsks8oul5.execute-api.us-east-2.amazonaws.com/preprod/category-model';
+  $endpoint_url = 'https://api.wpautotag.com/categories/popular/';
 
   // get domain-level inputs to model
   $category_prior = wpat_get_category_prior();
@@ -51,7 +51,7 @@ function wpat_call_category_api(
   if ($status_code == 200) {
     $result = wpat_strcase(
       $body_decode[0]->predicted_category,
-      get_option('wpat_capital_strategy')
+      get_option('wpat_capital_strategy_cat')
     );
   } else {
     $result = 'Error';
@@ -77,7 +77,7 @@ function wpat_call_category_api(
   return array(
     'status_code' => $status_code,
     'response' => esc_attr($result),
-    'error_msg' => esc_html($error_msg)
+    'error_msg' => $error_msg
   );
 }
 ?>

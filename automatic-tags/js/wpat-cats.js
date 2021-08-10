@@ -14,9 +14,9 @@ const withDispatch = wp.data.withDispatch;
 // Register store for suggested category
 // Reducer
 const initial_state = {
-    'suggestedCategory': ajax_object.suggested_category,
+    'suggestedCategory': wpat_ajax_object_cats.suggested_category,
     'addedCatIds': [],
-    'errorClass': ajax_object.error_msg,
+    'errorClass': wpat_ajax_object_cats.error_msg,
     'isFetching': false
 };
 function reducer( state = initial_state, action ) {

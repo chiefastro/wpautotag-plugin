@@ -3,7 +3,7 @@
    Plugin Name: Automatic Tags
    Plugin URI: https://wpautotag.com
    Description: Automatically tag and categorize your posts.
-   Version: 0.0.1
+   Version: 0.1.0
    Author: Jared Rand
    Author URI: http://jrandblog.com
    License: GPLv3
@@ -91,9 +91,14 @@ add_action( 'admin_enqueue_scripts', 'wpat_script_enqueue_edit_post' );
 function wpat_script_enqueue_edit_post($hook) {
   global $post;
   if ( $hook == 'post-new.php' || $hook == 'post.php' ) {
-  	wp_enqueue_script(
-      'ajax-script-wpat-edit-post',
-      plugins_url( '/js/wpat-edit-post.js', __FILE__ ),
+    wp_enqueue_script(
+      'ajax-script-wpat-cats',
+      plugins_url( '/js/wpat-cats.js', __FILE__ ),
+      array('jquery')
+    );
+    wp_enqueue_script(
+      'ajax-script-wpat-tags',
+      plugins_url( '/js/wpat-tags.js', __FILE__ ),
       array('jquery')
     );
     $actual_categories = wpat_get_actual_categories($post->ID);
@@ -104,15 +109,48 @@ function wpat_script_enqueue_edit_post($hook) {
     );
 
   	wp_localize_script(
-      'ajax-script-wpat-edit-post', 'ajax_object',
+      'ajax-script-wpat-cats', 'wpat_ajax_object_cats',
       array(
         'ajax_url' => admin_url( 'admin-ajax.php' ),
         'suggested_category' => $suggested_category['response'],
         'error_msg' => $suggested_category['error_msg'],
       )
     );
+    wp_localize_script(
+      'ajax-script-wpat-tags', 'wpat_ajax_object_tags',
+      array(
+        'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'img_dir' => WPAUTOTAG__PLUGIN_URL . '/images/',
+      )
+    );
   }
 }
+
+/* Metabox for tag suggestions */
+add_action( 'admin_menu', 'wpat_add_tag_suggestion_metabox');
+function wpat_add_tag_suggestion_metabox() {
+  add_meta_box( 'wpat_suggested_tags', wpat_get_tag_suggestion_header(),
+  'wpat_tag_suggestion_metabox', 'post', 'advanced', 'core' );
+}
+function wpat_tag_suggestion_metabox() {
+  ?>
+  <span class="wpat_tag_container">
+  Click a tag type to receive suggestions.
+  <div class="clear"></div>
+  </span>
+  <?php
+}
+function wpat_get_tag_suggestion_header() {
+  $html = '<div class="wpat-suggest-action-header">Suggested Tags</div>';
+  $html .= '<a data-ajaxaction="match" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Matches', 'wpat' ) . '</a>';
+  $html .= '<a data-ajaxaction="keyword" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Keywords', 'wpat' ) . '</a>';
+  $html .= '<a data-ajaxaction="topic" class="wpat-suggest-action-link" href="#wpat_suggested_tags">' . __( 'Topics', 'wpat' ) . '</a>';
+  $html .= '<div class="clear"></div>';
+
+  return $html;
+}
+
+
 
 /* Admin page */
 add_action('admin_menu', 'wpat_add_settings_page');
@@ -130,7 +168,11 @@ function sanitize_option_wpat_capital_strategy_callback( $capital_strategy_val )
   return $capital_strategy_val;
 }
 add_filter(
-  'sanitize_option_wpat_capital_strategy',
+  'sanitize_option_wpat_capital_strategy_cat',
+  'sanitize_option_wpat_capital_strategy_callback'
+);
+add_filter(
+  'sanitize_option_wpat_capital_strategy_tag',
   'sanitize_option_wpat_capital_strategy_callback'
 );
 function sanitize_option_wpat_api_key_callback( $api_key_val ) {
@@ -150,12 +192,14 @@ function wpat_settings_page() {
   // variables for the field and option names
   $api_key_name = 'wpat_api_key';
   $hidden_field_name = 'wpat_submit_hidden';
-  $capital_strategy_name = 'wpat_capital_strategy';
+  $capital_strategy_name_cat = 'wpat_capital_strategy_cat';
+  $capital_strategy_name_tag = 'wpat_capital_strategy_tag';
   $ignore_prior_name = 'wpat_ignore_prior';
 
   // Read in existing option value from database
   $api_key_val = get_option( $api_key_name );
-  $capital_strategy_val = get_option( $capital_strategy_name );
+  $capital_strategy_val_cat = get_option( $capital_strategy_name_cat );
+  $capital_strategy_val_tag = get_option( $capital_strategy_name_tag );
   $ignore_prior_val = get_option( $ignore_prior_name );
 
   // See if the user has posted us some information
@@ -163,14 +207,19 @@ function wpat_settings_page() {
   if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
       // Read their posted value
       $api_key_val = sanitize_option( 'wpat_api_key', $_POST[ $api_key_name ] );
-      $capital_strategy_val = sanitize_option(
-        'wpat_capital_strategy',
-        $_POST[ $capital_strategy_name ]
+      $capital_strategy_val_cat = sanitize_option(
+        'wpat_capital_strategy_cat',
+        $_POST[ $capital_strategy_name_cat ]
+      );
+      $capital_strategy_val_tag = sanitize_option(
+        'wpat_capital_strategy_tag',
+        $_POST[ $capital_strategy_name_tag ]
       );
       $ignore_prior_val = isset($_POST[ $ignore_prior_name ]) ? "1" : "0";
       // Save the posted value in the database
       update_option( $api_key_name, $api_key_val );
-      update_option( $capital_strategy_name, $capital_strategy_val );
+      update_option( $capital_strategy_name_cat, $capital_strategy_val_cat );
+      update_option( $capital_strategy_name_tag, $capital_strategy_val_tag );
       update_option( $ignore_prior_name, $ignore_prior_val );
       // Put a "settings saved" message on the screen
       ?>
@@ -219,23 +268,46 @@ function wpat_settings_page() {
       <table class="form-table"><tbody>
         <tr>
           <th scope="row">
-            <label for="<?php echo $capital_strategy_name; ?>">
-              How would you like suggested categories to be displayed?
+            <label for="<?php echo $capital_strategy_name_cat; ?>">
+              How would you like suggested <strong>categories</strong> to be displayed?
             </label>
           </th>
           <td>
-            <select name="<?php echo $capital_strategy_name; ?>">
+            <select name="<?php echo $capital_strategy_name_cat; ?>">
               <option value="lower"
-                <?php echo $capital_strategy_val == "lower" ? "selected" : ""; ?>
+                <?php echo $capital_strategy_val_cat == "lower" ? "selected" : ""; ?>
               >lower case</option>
               <option value="upper"
-                <?php echo $capital_strategy_val == "upper" ? "selected" : ""; ?>
+                <?php echo $capital_strategy_val_cat == "upper" ? "selected" : ""; ?>
               >UPPER CASE</option>
               <option value="title"
-                <?php echo $capital_strategy_val == "title" ? "selected" : ""; ?>
+                <?php echo $capital_strategy_val_cat == "title" ? "selected" : ""; ?>
               >Capitalize First Letter Of Each Word</option>
               <option value="sentence"
-                <?php echo $capital_strategy_val == "sentence" ? "selected" : ""; ?>
+                <?php echo $capital_strategy_val_cat == "sentence" ? "selected" : ""; ?>
+              >Capitalize first letter of first word</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">
+            <label for="<?php echo $capital_strategy_name_tag; ?>">
+              How would you like suggested <strong>tags</strong> to be displayed?
+            </label>
+          </th>
+          <td>
+            <select name="<?php echo $capital_strategy_name_tag; ?>">
+              <option value="lower"
+                <?php echo $capital_strategy_val_tag == "lower" ? "selected" : ""; ?>
+              >lower case</option>
+              <option value="upper"
+                <?php echo $capital_strategy_val_tag == "upper" ? "selected" : ""; ?>
+              >UPPER CASE</option>
+              <option value="title"
+                <?php echo $capital_strategy_val_tag == "title" ? "selected" : ""; ?>
+              >Capitalize First Letter Of Each Word</option>
+              <option value="sentence"
+                <?php echo $capital_strategy_val_tag == "sentence" ? "selected" : ""; ?>
               >Capitalize first letter of first word</option>
             </select>
           </td>
